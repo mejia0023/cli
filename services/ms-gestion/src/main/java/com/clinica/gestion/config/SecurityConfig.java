@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -58,6 +59,10 @@ public class SecurityConfig {
         if (jwksUri == null || jwksUri.isBlank()) {
             return token -> { throw new IllegalStateException("JWT decoder no configurado (modo dev sin Supabase)"); };
         }
-        return NimbusJwtDecoder.withJwkSetUri(jwksUri).build();
+        // Supabase moderno emite JWTs firmados con ES256 (clave EC P-256) — declarar
+        // ambos algoritmos comunes para tolerar rotacion del proyecto a RS256.
+        return NimbusJwtDecoder.withJwkSetUri(jwksUri)
+                .jwsAlgorithms(algs -> { algs.add(SignatureAlgorithm.ES256); algs.add(SignatureAlgorithm.RS256); })
+                .build();
     }
 }
