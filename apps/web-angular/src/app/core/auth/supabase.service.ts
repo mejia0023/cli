@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, map } from 'rxjs';
-import { createClient, SupabaseClient, Session, User } from '@supabase/supabase-js';
+import { createClient, SupabaseClient, Session, User, processLock } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
 
 export type RolUsuario = 'ADMINISTRADOR' | 'MEDICO' | 'FARMACEUTICO' | 'PACIENTE';
@@ -28,7 +28,15 @@ export class SupabaseService {
 
   constructor() {
     this.supabase = createClient(environment.supabase.url, environment.supabase.anonKey, {
-      auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true }
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        // processLock evita NavigatorLockAcquireTimeoutError cuando hay
+        // varias pestanas o cuando el navegador (Brave/anti-fingerprint)
+        // bloquea Navigator LockManager.
+        lock: processLock
+      }
     });
 
     this.supabase.auth.getSession().then(({ data }) => this.sessionSubject.next(data.session));
