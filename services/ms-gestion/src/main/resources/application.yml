@@ -6,8 +6,8 @@ spring:
 
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/clinica_gestion}
-    username: ${DB_USER:clinica}
-    password: ${DB_PASS:clinica}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASS:postgres}
     hikari:
       maximum-pool-size: 10
       data-source-properties:

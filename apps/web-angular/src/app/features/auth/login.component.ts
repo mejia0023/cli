@@ -29,7 +29,7 @@ import { homePorRol } from '../../shared/layout/menu-items';
         </form>
 
         <div class="hint">
-          Usuarios de prueba: admin / medico / farma / paciente @clinica.com
+          Usuarios de prueba: admin / medico / farma / paciente &#64;clinica.com
         </div>
       </div>
     </div>

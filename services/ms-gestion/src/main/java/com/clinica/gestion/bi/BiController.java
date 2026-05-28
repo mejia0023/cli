@@ -15,10 +15,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BiController {
 
-    private final BiRepository.VentasDiarias ventasDiariasRepo;
-    private final BiRepository.TopMedicamentos topMedicamentosRepo;
-    private final BiRepository.Inventario inventarioRepo;
-    private final BiRepository.RecetasBlockchain recetasBlockchainRepo;
+    private final VentaDiariaRepository ventasDiariasRepo;
+    private final TopMedicamentoRepository topMedicamentosRepo;
+    private final InventarioCriticoRepository inventarioRepo;
+    private final RecetaBlockchainRepository recetasBlockchainRepo;
 
     @QueryMapping
     @PreAuthorize("hasRole('ADMINISTRADOR')")

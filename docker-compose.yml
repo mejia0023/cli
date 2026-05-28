@@ -7,8 +7,12 @@ services:
       POSTGRES_USER: ${DB_USER:-clinica}
       POSTGRES_PASSWORD: ${DB_PASS:-clinica}
       POSTGRES_DB: ${DB_NAME:-clinica_gestion}
+      # DEV ONLY: confiar en cualquier conexion local; soluciona SCRAM auth de JDBC en Windows.
+      # En produccion usar scram-sha-256 con password fuerte.
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
-      - "5432:5432"
+      # 5432 esta ocupado en Windows por un Postgres nativo; usamos 5433 en el host
+      - "5433:5432"
     volumes:
       - clinica_postgres_data:/var/lib/postgresql/data
     healthcheck:

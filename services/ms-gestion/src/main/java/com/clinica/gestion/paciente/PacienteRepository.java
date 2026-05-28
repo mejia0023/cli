@@ -11,8 +11,9 @@ public interface PacienteRepository extends JpaRepository<Paciente, UUID> {
     Optional<Paciente> findByCi(String ci);
     Optional<Paciente> findBySupabaseUid(String supabaseUid);
 
-    @Query("select p from Paciente p where lower(p.nombre) like lower(concat('%', :q, '%')) " +
-            "or lower(p.apellido) like lower(concat('%', :q, '%')) " +
-            "or p.ci like concat('%', :q, '%')")
+    @Query(value = "select * from paciente p where lower(p.nombre) like lower(concat('%', cast(:q as text), '%')) " +
+            "or lower(p.apellido) like lower(concat('%', cast(:q as text), '%')) " +
+            "or p.ci like concat('%', cast(:q as text), '%')",
+            nativeQuery = true)
     List<Paciente> buscar(String q);
 }
