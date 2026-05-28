@@ -1,0 +1,130 @@
+@startuml UML Clases — Dominio ms-gestion
+
+title Diagrama de clases — Dominio de Gestion (Alimbert)
+
+skinparam classAttributeIconSize 0
+
+class Usuario {
+  +UUID id
+  +String supabaseUid
+  +String nombre
+  +String email
+  +boolean activo
+}
+
+class Rol {
+  +Integer id
+  +String nombre
+  +String descripcion
+}
+
+Usuario "1" -- "1" Rol
+
+class Paciente {
+  +UUID id
+  +String supabaseUid
+  +String ci
+  +String nombre
+  +String apellido
+  +LocalDate fechaNacimiento
+}
+
+class Categoria {
+  +Integer id
+  +String nombre
+}
+
+class Proveedor {
+  +UUID id
+  +String nombre
+  +String nit
+  +boolean activo
+}
+
+class Medicamento {
+  +UUID id
+  +String nombre
+  +BigDecimal precioVenta
+  +boolean requiereReceta
+  +boolean controlado
+  +int stockMinimo
+  +boolean activo
+}
+
+Medicamento "*" -- "1" Categoria
+
+class Lote {
+  +UUID id
+  +String codigoLote
+  +LocalDate fechaVencimiento
+  +int cantidadActual
+  +BigDecimal precioCompra
+}
+
+Lote "*" -- "1" Medicamento
+Lote "*" -- "0..1" Proveedor
+
+enum TipoMovimiento { ENTRADA SALIDA AJUSTE }
+
+class MovimientoInventario {
+  +UUID id
+  +TipoMovimiento tipo
+  +int cantidad
+  +OffsetDateTime fecha
+}
+
+MovimientoInventario "*" -- "1" Lote
+MovimientoInventario "*" -- "0..1" Usuario
+
+enum EstadoReceta { EMITIDA DISPENSADA ANULADA }
+
+class Receta {
+  +UUID id
+  +String medicoUid
+  +OffsetDateTime fechaEmision
+  +boolean controlado
+  +String hashDocumento
+  +String blockchainTx
+  +Long blockchainId
+  +EstadoReceta estado
+}
+
+class DetalleReceta {
+  +UUID id
+  +int cantidad
+  +String posologia
+}
+
+Receta "*" -- "1" Paciente
+Receta "1" -- "*" DetalleReceta
+DetalleReceta "*" -- "1" Medicamento
+
+enum MetodoPago { EFECTIVO TARJETA TRANSFERENCIA QR }
+enum EstadoFactura { PENDIENTE PAGADA ANULADA }
+
+class Factura {
+  +UUID id
+  +String numero
+  +OffsetDateTime fecha
+  +BigDecimal subtotal
+  +BigDecimal descuento
+  +BigDecimal total
+  +MetodoPago metodoPago
+  +EstadoFactura estado
+}
+
+class DetalleFactura {
+  +UUID id
+  +int cantidad
+  +BigDecimal precioUnitario
+  +BigDecimal subtotal
+}
+
+Factura "*" -- "0..1" Paciente
+Factura "*" -- "1" Usuario : cajero
+Factura "1" -- "*" DetalleFactura
+DetalleFactura "*" -- "1" Medicamento
+DetalleFactura "*" -- "1" Lote
+DetalleFactura "*" -- "0..1" Receta
+
+@enduml

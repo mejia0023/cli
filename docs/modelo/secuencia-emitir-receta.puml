@@ -1,0 +1,48 @@
+@startuml Secuencia — Emitir receta controlada
+
+title Secuencia — Emitir receta controlada (incluye registro blockchain)
+
+actor Medico
+participant "Angular\n(web)" as Web
+participant "Supabase Auth" as Supabase
+participant "ms-gestion\nRecetaController" as Ctrl
+participant "RecetaService" as Svc
+database "PostgreSQL\nclinica_gestion" as DB
+participant "BlockchainClient" as BC
+participant "ms-blockchain\n/recetas" as MSBC
+participant "Polygon Amoy\nRegistroRecetas.sol" as Polygon
+
+Medico -> Web : Llena formulario y emite
+Web -> Supabase : getSession() -> access_token
+Web -> Ctrl : mutation emitirReceta(input)\nAuthorization: Bearer <jwt>
+
+Ctrl -> Ctrl : @PreAuthorize(hasRole('MEDICO'))\nUsuarioContext.current()
+Ctrl -> Svc : emitir(safeInput)
+
+Svc -> DB : SELECT paciente, medicamentos
+Svc -> Svc : detectarControlado()
+Svc -> DB : INSERT Receta + Detalles (estado=EMITIDA)
+
+alt receta tiene medicamento controlado
+  Svc -> Svc : canonicalize() -> sha256
+  Svc -> BC : registrarReceta(canonico, pacienteId, medicoUid)
+  BC -> MSBC : POST /recetas { documentoTexto, pacienteId, medicoUid }\nBearer <jwt>
+  MSBC -> MSBC : verifica JWT (JWKS)
+  MSBC -> Polygon : contract.registrar(hash, pacienteB32, medicoB32)
+  Polygon --> MSBC : tx + RecetaRegistrada(id, ...)
+  MSBC --> BC : { id, txHash, blockNumber, hash }
+  BC --> Svc : RegistroBlockchain
+  Svc -> DB : UPDATE receta SET hash, blockchain_tx, blockchain_id
+end
+
+Svc --> Ctrl : Receta persistida
+Ctrl --> Web : { id, blockchainTx, estado, ... }
+Web --> Medico : Muestra confirmacion + link Polygonscan
+
+note over Svc, BC
+Si la llamada a ms-blockchain falla (timeout/5xx),
+la receta queda sin txHash y un @Scheduled
+reintenta cada 60s.
+end note
+
+@enduml

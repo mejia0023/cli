@@ -1,0 +1,47 @@
+@startuml C4 — Sistema Clinica (Context, nivel 1)
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title C4 Nivel 1 — Sistema Integral de Clinica
+
+Person(admin, "Administrador", "Gestiona usuarios, BI, caja y recepcion")
+Person(medico, "Medico", "Emite recetas y atiende consultas")
+Person(farma, "Farmaceutico", "Caja, inventario, dispensacion")
+Person(paciente, "Paciente", "Consulta sus facturas, recetas y citas")
+
+System_Boundary(clinica, "Sistema Clinica") {
+  System(gestion, "ms-gestion (Alimbert)", "Backend de facturacion/inventario en Azure")
+  System(blockchain, "ms-blockchain (Alimbert)", "Registro inmutable de recetas en Polygon Amoy")
+  System(web, "Web Angular (Alimbert + Jose)", "UI de admin/farma/medico")
+  System_Ext(movil, "App movil RN (Javier)", "Camara, GPS, biometria, micro")
+  System_Ext(gateway, "API Gateway GraphQL (Javier)", "Federa subgrafos")
+  System_Ext(pacientes, "ms-pacientes (Javier)", "Pacientes y citas en AWS")
+  System_Ext(diagnosticos, "ms-diagnosticos (Jose)", "Diagnostico con IA en GCP")
+  System_Ext(documental, "S3 + DynamoDB (Jose)", "Historiales y PDFs")
+}
+
+System_Ext(supabase, "Supabase Auth", "JWT centralizado (JWKS)")
+System_Ext(polygon, "Polygon Amoy", "Testnet publica")
+System_Ext(n8n, "N8N + WhatsApp (Javier)", "Automatizacion de reservas")
+System_Ext(vertex, "Vertex AI (Jose)", "Modelos de IA medica")
+
+Rel(admin, web, "Usa")
+Rel(farma, web, "Usa")
+Rel(medico, web, "Usa")
+Rel(paciente, movil, "Usa")
+Rel(paciente, web, "Consulta facturas")
+
+Rel(web, gateway, "GraphQL")
+Rel(movil, gateway, "GraphQL")
+Rel(gateway, gestion, "Federa subgrafo")
+Rel(gateway, pacientes, "Federa subgrafo")
+Rel(gateway, diagnosticos, "Federa subgrafo")
+
+Rel(gestion, blockchain, "HTTP — registra hash receta")
+Rel(blockchain, polygon, "ethers.js — RegistroRecetas.sol")
+Rel(gestion, supabase, "Valida JWT")
+Rel(blockchain, supabase, "Valida JWT")
+Rel(diagnosticos, vertex, "Inferencia IA")
+Rel(diagnosticos, documental, "Lee/escribe PDFs e imagenes")
+Rel(pacientes, n8n, "Dispara WhatsApp")
+
+@enduml

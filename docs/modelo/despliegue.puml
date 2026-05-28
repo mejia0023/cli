@@ -1,0 +1,45 @@
+@startuml Despliegue — Parte Alimbert
+
+title Diagrama de despliegue — Alimbert
+
+cloud "Microsoft Azure" {
+  node "App Service plan B1\nLinux + Java 17" {
+    component "ms-gestion.jar" as appJar
+  }
+  database "Azure Database for PostgreSQL\nFlexible Server B1ms" {
+    artifact "clinica_gestion" as pgDb
+  }
+  node "Static Web Apps (Free)" {
+    component "web-angular SPA" as angular
+  }
+}
+
+cloud "Render.com (Free)" {
+  node "Web Service Node 18" {
+    component "ms-blockchain (Express)" as msbc
+  }
+}
+
+cloud "Polygon Amoy (testnet)" {
+  artifact "RegistroRecetas.sol\n0x...address" as contract
+}
+
+cloud "Supabase" {
+  artifact "Auth + JWKS RS256" as authsb
+}
+
+node "Navegador del usuario" {
+  component "Chrome / Firefox" as browser
+}
+
+browser --> angular : HTTPS\nStatic SWA
+browser --> authsb : Login email/password
+browser --> appJar : GraphQL POST\nBearer <jwt>
+angular ..> appJar : GraphQL
+appJar --> pgDb : JDBC TLS sslmode=require
+appJar --> msbc : REST POST /recetas\nBearer <jwt> timeout 5s
+appJar --> authsb : Valida JWT (cache JWKS)
+msbc --> contract : ethers.js RPC
+msbc --> authsb : Valida JWT (cache JWKS)
+
+@enduml

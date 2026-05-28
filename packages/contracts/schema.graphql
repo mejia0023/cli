@@ -1,0 +1,98 @@
+# SDL consolidado de ms-gestion — exportado para integracion futura
+# Generar con: curl http://localhost:8080/graphql/schema | tee packages/contracts/schema.graphql
+# (Spring for GraphQL expone el SDL plano en /graphql/schema cuando graphql.schema.printer.enabled=true)
+#
+# Este archivo es leido por:
+#   - El API Gateway de Javier (Apollo Federation / GraphQL Mesh) para federar el subgrafo
+#   - El Angular de medicos de Jose para tipar queries con graphql-codegen
+
+scalar UUID
+scalar DateTime
+scalar Date
+scalar BigDecimal
+
+enum RolEnum { ADMINISTRADOR MEDICO FARMACEUTICO PACIENTE }
+enum EstadoReceta { EMITIDA DISPENSADA ANULADA }
+enum MetodoPago { EFECTIVO TARJETA TRANSFERENCIA QR }
+enum EstadoFactura { PENDIENTE PAGADA ANULADA }
+enum TipoMovimiento { ENTRADA SALIDA AJUSTE }
+
+# TODO @key(fields: "id") cuando se active federacion
+type Usuario {
+  id: UUID!
+  supabaseUid: String!
+  nombre: String!
+  email: String!
+  rol: RolEnum!
+  activo: Boolean!
+}
+
+# TODO @key(fields: "id") cuando se active federacion (Javier sera dueno canonico)
+type Paciente {
+  id: UUID!
+  supabaseUid: String
+  ci: String!
+  nombre: String!
+  apellido: String!
+  telefono: String
+  email: String
+  fechaNacimiento: Date
+}
+
+type Categoria { id: Int!  nombre: String!  descripcion: String }
+type Proveedor { id: UUID! nombre: String! nit: String  activo: Boolean! }
+
+type Medicamento {
+  id: UUID!
+  nombre: String!
+  descripcion: String
+  categoria: Categoria
+  precioVenta: BigDecimal!
+  requiereReceta: Boolean!
+  controlado: Boolean!
+  stockMinimo: Int!
+  activo: Boolean!
+}
+
+type Lote {
+  id: UUID!
+  medicamento: Medicamento!
+  proveedor: Proveedor
+  codigoLote: String!
+  fechaVencimiento: Date!
+  cantidadInicial: Int!
+  cantidadActual: Int!
+  precioCompra: BigDecimal!
+}
+
+# TODO @key(fields: "id") cuando se active federacion
+type Receta {
+  id: UUID!
+  paciente: Paciente!
+  medicoNombre: String!
+  medicoUid: String!
+  diagnostico: String
+  fechaEmision: DateTime!
+  controlado: Boolean!
+  hashDocumento: String
+  blockchainTx: String
+  blockchainId: Float
+  estado: EstadoReceta!
+}
+
+type Factura {
+  id: UUID!
+  numero: String!
+  paciente: Paciente
+  usuario: Usuario!
+  fecha: DateTime!
+  subtotal: BigDecimal!
+  descuento: BigDecimal!
+  total: BigDecimal!
+  metodoPago: MetodoPago!
+  estado: EstadoFactura!
+}
+
+# (El esquema completo, incluyendo inputs y BI types, vive en
+#  services/ms-gestion/src/main/resources/graphql/. Este archivo es un
+#  resumen federable; el SDL completo se regenera desde el servidor en ejecucion.)

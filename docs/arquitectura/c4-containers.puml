@@ -1,0 +1,36 @@
+@startuml C4 — Contenedores (nivel 2, parte Alimbert)
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title C4 Nivel 2 — Contenedores de la parte de Alimbert
+
+Person(admin, "Admin/Farma/Medico")
+
+System_Boundary(alimbert, "Parte de Alimbert") {
+  Container(web_ng, "web-angular", "Angular 17 + Apollo Client", "SPA standalone con sidebar dinamico por rol")
+  Container(ms_gestion, "ms-gestion", "Java 17 / Spring Boot 3", "GraphQL CRUD + auth + integracion blockchain")
+  ContainerDb(pg, "PostgreSQL 16", "Database for PostgreSQL", "Tablas y vistas para BI")
+  Container(ms_blockchain, "ms-blockchain", "Node.js + Express + ethers.js", "API REST que escribe al contrato")
+}
+
+System_Ext(supabase, "Supabase Auth", "JWKS RS256")
+System_Ext(polygon, "Polygon Amoy", "Testnet publica")
+System_Ext(gateway, "Gateway GraphQL (Javier)", "Federa subgrafos - futuro")
+
+Rel(admin, web_ng, "HTTPS")
+Rel(web_ng, ms_gestion, "GraphQL /graphql", "HTTPS")
+Rel(web_ng, supabase, "Login email/password", "HTTPS")
+Rel(ms_gestion, pg, "JDBC", "Flyway migra al arranque")
+Rel(ms_gestion, ms_blockchain, "REST POST /recetas", "JSON, JWT bearer, timeout 5s + reintento")
+Rel(ms_gestion, supabase, "Valida JWT por JWKS", "HTTPS")
+Rel(ms_blockchain, polygon, "RPC Amoy", "ethers.js")
+Rel(ms_blockchain, supabase, "Valida JWT por JWKS", "HTTPS")
+Rel(gateway, ms_gestion, "Subgrafo GraphQL (federacion futura)", "HTTPS")
+
+Container_Boundary(deploy_alimbert, "Azure + Render") {
+  Container(azure_app, "Azure App Service", "JAVA 17 plan B1", "Host de ms-gestion")
+  Container(azure_pg, "Azure Database for PostgreSQL", "Flexible Server B1ms", "Host de pg")
+  Container(azure_swa, "Azure Static Web Apps", "Free tier", "Host de web-angular")
+  Container(render, "Render Web Service", "Free tier Node", "Host de ms-blockchain")
+}
+
+@enduml

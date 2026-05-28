@@ -1,0 +1,61 @@
+@startuml Casos de uso — Parte Alimbert
+
+title Diagrama de casos de uso — Parte Alimbert
+
+left to right direction
+
+actor Administrador
+actor Farmaceutico
+actor Medico
+actor Paciente
+
+rectangle "Sistema Clinica (Alimbert)" {
+
+  usecase "Gestionar usuarios" as UC_USR
+  usecase "Ver Dashboard BI" as UC_BI
+  usecase "Gestionar categorias y proveedores" as UC_CFG
+
+  usecase "Registrar paciente" as UC_PAC
+  usecase "Crear factura (POS)" as UC_FACT
+  usecase "Anular factura" as UC_ANUL
+  usecase "Registrar medicamento" as UC_MED
+  usecase "Registrar entrada de lote" as UC_LOTE
+  usecase "Ajustar stock" as UC_AJ
+
+  usecase "Emitir receta" as UC_REC
+  usecase "Registrar receta en blockchain" as UC_BC
+  usecase "Verificar integridad de receta" as UC_VERIF
+
+  usecase "Consultar mis facturas" as UC_MIS_F
+  usecase "Consultar mis recetas" as UC_MIS_R
+}
+
+Administrador --> UC_USR
+Administrador --> UC_BI
+Administrador --> UC_CFG
+Administrador --> UC_FACT
+Administrador --> UC_ANUL
+Administrador --> UC_PAC
+Administrador --> UC_MED
+Administrador --> UC_LOTE
+Administrador --> UC_AJ
+Administrador --> UC_VERIF
+
+Farmaceutico --> UC_PAC
+Farmaceutico --> UC_FACT
+Farmaceutico --> UC_ANUL
+Farmaceutico --> UC_MED
+Farmaceutico --> UC_LOTE
+Farmaceutico --> UC_AJ
+Farmaceutico --> UC_VERIF
+
+Medico --> UC_REC
+Medico --> UC_VERIF
+
+Paciente --> UC_MIS_F
+Paciente --> UC_MIS_R
+
+UC_REC ..> UC_BC : <<include>> si controlado
+UC_VERIF ..> UC_BC : <<include>> consulta on-chain
+
+@enduml
