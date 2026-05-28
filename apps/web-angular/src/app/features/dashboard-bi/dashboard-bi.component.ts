@@ -2,8 +2,11 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BaseChartDirective } from 'ng2-charts';
-import { ChartConfiguration, ChartData } from 'chart.js';
+import { Chart, ChartConfiguration, ChartData, registerables } from 'chart.js';
 import { Apollo } from 'apollo-angular';
+
+// Chart.js 4 NO registra scales/elements por defecto. Sin esto: "category is not a registered scale".
+Chart.register(...registerables);
 import {
   BI_VENTAS_DIARIAS, BI_TOP_MEDICAMENTOS,
   BI_INVENTARIO_CRITICO, BI_RECETAS_BLOCKCHAIN,
