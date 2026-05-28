@@ -4,6 +4,8 @@
 .env.*.local
 *.pem
 *.key
+c.c
+credenciales.*
 
 # === Java / Maven ===
 target/
@@ -65,3 +67,4 @@ coverage/
 
 # === Misc ===
 *.local
+t.t

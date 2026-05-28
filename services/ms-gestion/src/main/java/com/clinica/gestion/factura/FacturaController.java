@@ -1,9 +1,7 @@
 package com.clinica.gestion.factura;
 
-import com.clinica.gestion.common.context.UsuarioContext;
 import com.clinica.gestion.paciente.Paciente;
 import com.clinica.gestion.paciente.PacienteRepository;
-import com.clinica.gestion.usuario.Usuario;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -11,6 +9,9 @@ import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Controller;
 
 import java.util.Collections;
@@ -39,9 +40,12 @@ public class FacturaController {
     @QueryMapping
     @PreAuthorize("hasRole('PACIENTE')")
     public List<Factura> misFacturas() {
-        Usuario u = UsuarioContext.current();
-        if (u == null) throw new AccessDeniedException("Usuario no autenticado");
-        return pacienteRepository.findBySupabaseUid(u.getSupabaseUid())
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (!(auth instanceof JwtAuthenticationToken jwt)) {
+            throw new AccessDeniedException("Usuario no autenticado");
+        }
+        String uid = jwt.getToken().getSubject();
+        return pacienteRepository.findBySupabaseUid(uid)
                 .map(Paciente::getId)
                 .map(facturaService::listarPorPaciente)
                 .orElse(Collections.emptyList());

@@ -54,7 +54,7 @@ export const APP_ROUTES: Routes = [
       {
         path: 'mis-recetas',
         canActivate: [roleGuard],
-        data: { roles: ['MEDICO'] },
+        data: { roles: ['MEDICO', 'PACIENTE'] },
         loadComponent: () => import('./features/mis-recetas/mis-recetas.component').then(m => m.MisRecetasComponent)
       },
       {

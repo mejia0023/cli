@@ -13,7 +13,7 @@ export const MENU: MenuItem[] = [
   { label: 'Inventario',     icon: 'pi-box',           route: '/inventario',    roles: ['ADMINISTRADOR', 'FARMACEUTICO'] },
   { label: 'Administración', icon: 'pi-cog',           route: '/administracion',roles: ['ADMINISTRADOR'] },
   { label: 'Dashboard BI',   icon: 'pi-chart-bar',     route: '/dashboard',     roles: ['ADMINISTRADOR'] },
-  { label: 'Mis recetas',    icon: 'pi-file-edit',     route: '/mis-recetas',   roles: ['MEDICO'] },
+  { label: 'Mis recetas',    icon: 'pi-file-edit',     route: '/mis-recetas',   roles: ['MEDICO', 'PACIENTE'] },
   { label: 'Mis facturas',   icon: 'pi-receipt',       route: '/mis-facturas',  roles: ['PACIENTE'] }
 ];
 

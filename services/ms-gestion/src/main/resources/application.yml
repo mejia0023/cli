@@ -55,7 +55,8 @@ app:
     jwks-uri: ${SUPABASE_JWKS_URI:}
     issuer: ${SUPABASE_ISSUER:}
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:4200,http://localhost:8081}
+    # Permite localhost + cualquier IP de red local en :4200/:8081 (dev: probar desde celular)
+    allowed-origins: ${CORS_ORIGINS:http://localhost:4200,http://localhost:8081,http://192.168.*:4200,http://10.*:4200,http://172.*:4200}
 
 logging:
   level:

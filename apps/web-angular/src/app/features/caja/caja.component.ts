@@ -2,7 +2,15 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Apollo } from 'apollo-angular';
-import { LIST_MEDICAMENTOS, LIST_PACIENTES, CREATE_FACTURA } from '../../core/graphql/queries';
+import { LIST_MEDICAMENTOS, LIST_PACIENTES, CREATE_FACTURA, VERIFICAR_RECETA } from '../../core/graphql/queries';
+
+interface VerificacionResultado {
+  exists: boolean;
+  blockNumber?: number;
+  timestamp?: number;
+  error?: string;
+  loading?: boolean;
+}
 
 interface CartItem {
   medicamentoId: string;
@@ -12,6 +20,7 @@ interface CartItem {
   controlado: boolean;
   requiereReceta: boolean;
   recetaId?: string;
+  verificacion?: VerificacionResultado;
 }
 
 @Component({
@@ -44,7 +53,18 @@ interface CartItem {
         <div *ngFor="let it of carrito; let i = index" class="cart-item">
           <div style="flex:1;">
             <div>{{ it.nombre }}</div>
-            <input *ngIf="it.requiereReceta" [(ngModel)]="it.recetaId" name="r{{i}}" placeholder="ID Receta" style="font-size: 11px; margin-top: 4px; padding: 4px;">
+            <div *ngIf="it.requiereReceta" class="receta-block">
+              <input [(ngModel)]="it.recetaId" name="r{{i}}" placeholder="ID Receta (UUID)" class="receta-input">
+              <button type="button"
+                      (click)="verificarRecetaItem(i)"
+                      [disabled]="!it.recetaId || it.recetaId.length < 36 || it.verificacion?.loading"
+                      class="btn-verify">
+                {{ it.verificacion?.loading ? '...' : 'Verificar on-chain' }}
+              </button>
+              <span *ngIf="it.verificacion?.exists === true" class="badge badge-green">✓ On-chain · Bloque {{ it.verificacion?.blockNumber }}</span>
+              <span *ngIf="it.verificacion && it.verificacion.exists === false && !it.verificacion.error" class="badge badge-amber">⚠ No registrada</span>
+              <span *ngIf="it.verificacion?.error" class="badge badge-red">✗ {{ it.verificacion?.error }}</span>
+            </div>
           </div>
           <input type="number" [(ngModel)]="it.cantidad" name="c{{i}}" min="1" style="width: 60px;">
           <span>{{ (it.precio * it.cantidad).toFixed(2) }}</span>
@@ -110,6 +130,11 @@ interface CartItem {
     .btn-primary { width: 100%; padding: 12px; background: #0f6e56; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .success-msg { margin-top: 12px; padding: 8px; background: #d1fae5; color: #065f46; border-radius: 4px; font-size: 13px; }
+    .receta-block { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 4px; }
+    .receta-input { flex: 1 1 auto; min-width: 130px; font-size: 11px; padding: 4px; border: 1px solid #d1d5db; border-radius: 4px; }
+    .btn-verify { background: #0f6e56; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; white-space: nowrap; }
+    .btn-verify:disabled { opacity: 0.4; cursor: not-allowed; }
+    .badge-green { background: #d1fae5; color: #065f46; font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 600; }
   `]
 })
 export class CajaComponent implements OnInit {
@@ -148,6 +173,32 @@ export class CajaComponent implements OnInit {
 
   total(): number {
     return this.carrito.reduce((s, it) => s + it.precio * it.cantidad, 0);
+  }
+
+  verificarRecetaItem(i: number) {
+    const it = this.carrito[i];
+    if (!it.recetaId) return;
+    it.verificacion = { exists: false, loading: true };
+    this.apollo.query<any>({
+      query: VERIFICAR_RECETA,
+      variables: { id: it.recetaId },
+      fetchPolicy: 'network-only'
+    }).subscribe({
+      next: res => {
+        const v = res.data?.verificarReceta;
+        if (!v) { it.verificacion = { exists: false, error: 'Sin respuesta' }; return; }
+        it.verificacion = {
+          exists: v.exists,
+          blockNumber: v.blockNumber,
+          timestamp: v.timestamp,
+          error: v.error || undefined,
+          loading: false
+        };
+      },
+      error: e => {
+        it.verificacion = { exists: false, error: e.message, loading: false };
+      }
+    });
   }
 
   facturar() {

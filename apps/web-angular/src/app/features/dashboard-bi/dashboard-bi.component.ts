@@ -6,7 +6,8 @@ import { ChartConfiguration, ChartData } from 'chart.js';
 import { Apollo } from 'apollo-angular';
 import {
   BI_VENTAS_DIARIAS, BI_TOP_MEDICAMENTOS,
-  BI_INVENTARIO_CRITICO, BI_RECETAS_BLOCKCHAIN
+  BI_INVENTARIO_CRITICO, BI_RECETAS_BLOCKCHAIN,
+  VERIFICAR_RECETA
 } from '../../core/graphql/queries';
 
 @Component({
@@ -20,6 +21,40 @@ import {
       <label>Desde <input type="date" [(ngModel)]="desde" (change)="recargar()"></label>
       <label>Hasta <input type="date" [(ngModel)]="hasta" (change)="recargar()"></label>
       <button (click)="recargar()" class="btn-primary"><i class="pi pi-refresh"></i> Recargar</button>
+    </div>
+
+    <!-- Verificador puntual de receta en blockchain -->
+    <div class="card verificador">
+      <div class="verificador-header">
+        <i class="pi pi-shield" style="color: #0f6e56;"></i>
+        <h3>Verificar receta en blockchain</h3>
+      </div>
+      <div class="verificador-form">
+        <input [(ngModel)]="verificadorId"
+               placeholder="Pega el UUID de la receta a verificar on-chain"
+               class="verificador-input">
+        <button (click)="verificarRecetaPuntual()"
+                [disabled]="!verificadorId || verificadorId.length < 36 || verificadorCargando"
+                class="btn-primary">
+          {{ verificadorCargando ? 'Verificando...' : 'Verificar' }}
+        </button>
+      </div>
+      <div *ngIf="verificadorResultado" class="verificador-resultado">
+        <div *ngIf="verificadorResultado.exists === true" class="vr-ok">
+          ✓ Receta registrada en blockchain
+          <div class="vr-detalles">
+            <span><strong>Bloque:</strong> {{ verificadorResultado.blockNumber }}</span>
+            <span><strong>Timestamp:</strong> {{ verificadorTimestampLegible() }}</span>
+            <span><strong>ID on-chain:</strong> {{ verificadorResultado.id }}</span>
+          </div>
+        </div>
+        <div *ngIf="verificadorResultado.exists === false && !verificadorResultado.error" class="vr-warn">
+          ⚠ {{ verificadorResultado.razon || 'No registrada en blockchain' }}
+        </div>
+        <div *ngIf="verificadorResultado.error" class="vr-err">
+          ✗ Error: {{ verificadorResultado.error }}
+        </div>
+      </div>
     </div>
 
     <div class="kpis">
@@ -94,6 +129,16 @@ import {
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-amber { background: #fef3c7; color: #92400e; }
     .badge-green { background: #d1fae5; color: #065f46; }
+    .verificador { margin-bottom: 20px; padding: 16px; border-left: 4px solid #0f6e56; }
+    .verificador-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .verificador-header h3 { margin: 0; font-size: 16px; color: #0f6e56; }
+    .verificador-form { display: flex; gap: 8px; }
+    .verificador-input { flex: 1; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-family: monospace; font-size: 13px; }
+    .verificador-resultado { margin-top: 12px; font-size: 13px; }
+    .vr-ok { background: #d1fae5; color: #065f46; padding: 12px; border-radius: 6px; font-weight: 600; }
+    .vr-warn { background: #fef3c7; color: #92400e; padding: 12px; border-radius: 6px; font-weight: 600; }
+    .vr-err { background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 6px; font-weight: 600; }
+    .vr-detalles { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 8px; font-weight: 400; font-size: 12px; }
   `]
 })
 export class DashboardBiComponent implements OnInit {
@@ -105,6 +150,11 @@ export class DashboardBiComponent implements OnInit {
   top: any[] = [];
   inventario: any[] = [];
   bc: any[] = [];
+
+  // Verificador puntual
+  verificadorId = '';
+  verificadorResultado: any = null;
+  verificadorCargando = false;
 
   ventasChart: ChartData<'line'> = { labels: [], datasets: [] };
   topChart: ChartData<'bar'> = { labels: [], datasets: [] };
@@ -186,5 +236,31 @@ export class DashboardBiComponent implements OnInit {
 
   totalBlockchain(): number {
     return this.bc.reduce((s, b) => s + Number(b.registradasEnBlockchain), 0);
+  }
+
+  verificarRecetaPuntual() {
+    if (!this.verificadorId) return;
+    this.verificadorCargando = true;
+    this.verificadorResultado = null;
+    this.apollo.query<any>({
+      query: VERIFICAR_RECETA,
+      variables: { id: this.verificadorId.trim() },
+      fetchPolicy: 'network-only'
+    }).subscribe({
+      next: res => {
+        this.verificadorCargando = false;
+        this.verificadorResultado = res.data?.verificarReceta || { exists: false, error: 'Sin respuesta' };
+      },
+      error: e => {
+        this.verificadorCargando = false;
+        this.verificadorResultado = { exists: false, error: e.message };
+      }
+    });
+  }
+
+  verificadorTimestampLegible(): string {
+    const ts = this.verificadorResultado?.timestamp;
+    if (!ts) return '—';
+    return new Date(ts * 1000).toLocaleString();
   }
 }

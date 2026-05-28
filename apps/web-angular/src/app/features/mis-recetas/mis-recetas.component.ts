@@ -2,16 +2,19 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Apollo } from 'apollo-angular';
-import { MIS_RECETAS, LIST_PACIENTES, LIST_MEDICAMENTOS, EMITIR_RECETA, VERIFICAR_RECETA } from '../../core/graphql/queries';
+import { take } from 'rxjs';
+import { MIS_RECETAS, MIS_RECETAS_PACIENTE, LIST_PACIENTES, LIST_MEDICAMENTOS, EMITIR_RECETA, VERIFICAR_RECETA } from '../../core/graphql/queries';
+import { SupabaseService } from '../../core/auth/supabase.service';
 
 @Component({
   selector: 'app-mis-recetas',
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <h1 class="page-title">Mis recetas (Médico)</h1>
+    <h1 class="page-title">{{ esMedico ? 'Mis recetas (Médico)' : 'Mis recetas' }}</h1>
 
-    <div class="card">
+    <!-- Formulario emitir - solo MEDICO -->
+    <div class="card" *ngIf="esMedico">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <h3>Nueva receta</h3>
         <button (click)="showForm = !showForm" class="btn-primary">
@@ -52,12 +55,14 @@ import { MIS_RECETAS, LIST_PACIENTES, LIST_MEDICAMENTOS, EMITIR_RECETA, VERIFICA
       </form>
     </div>
 
+    <!-- Lista de recetas (ambos roles) -->
     <div class="card">
-      <h3>Recetas emitidas</h3>
+      <h3>{{ esMedico ? 'Recetas emitidas' : 'Recetas que me han emitido' }}</h3>
       <div *ngFor="let r of recetas" class="receta-card">
         <div style="display:flex; justify-content: space-between;">
           <div>
-            <strong>{{ r.paciente.nombre }} {{ r.paciente.apellido }}</strong>
+            <strong *ngIf="esMedico">{{ r.paciente?.nombre }} {{ r.paciente?.apellido }}</strong>
+            <strong *ngIf="!esMedico">{{ r.medicoNombre }}</strong>
             <span class="meta">{{ r.fechaEmision | date:'short' }}</span>
             <span *ngIf="r.controlado" class="badge badge-red">Controlado</span>
             <span *ngIf="r.blockchainTx" class="badge badge-green">On-chain</span>
@@ -65,6 +70,9 @@ import { MIS_RECETAS, LIST_PACIENTES, LIST_MEDICAMENTOS, EMITIR_RECETA, VERIFICA
           </div>
           <button (click)="verificar(r)" class="btn-link">Verificar integridad</button>
         </div>
+        <p *ngIf="!esMedico && r.diagnostico" class="diagnostico">
+          <strong>Diagnóstico:</strong> {{ r.diagnostico }}
+        </p>
         <ul>
           <li *ngFor="let d of r.detalles">{{ d.medicamento.nombre }} × {{ d.cantidad }} <em *ngIf="d.posologia">— {{ d.posologia }}</em></li>
         </ul>
@@ -72,10 +80,20 @@ import { MIS_RECETAS, LIST_PACIENTES, LIST_MEDICAMENTOS, EMITIR_RECETA, VERIFICA
           <small>tx: <a [href]="'https://amoy.polygonscan.com/tx/' + r.blockchainTx" target="_blank">{{ r.blockchainTx.substring(0, 20) }}…</a></small>
         </div>
         <div *ngIf="verificaciones[r.id]" class="verify-result">
-          <pre>{{ verificaciones[r.id] | json }}</pre>
+          <div *ngIf="verificaciones[r.id].exists === true" class="verify-ok">
+            ✓ Receta registrada en blockchain · Bloque {{ verificaciones[r.id].blockNumber }} · {{ verificaciones[r.id].timestamp ? (formatTs(verificaciones[r.id].timestamp)) : '' }}
+          </div>
+          <div *ngIf="verificaciones[r.id].exists === false" class="verify-warn">
+            ⚠ {{ verificaciones[r.id].razon || 'No encontrada en blockchain' }}
+          </div>
+          <div *ngIf="verificaciones[r.id].error" class="verify-err">
+            ✗ Error: {{ verificaciones[r.id].error }}
+          </div>
         </div>
       </div>
-      <p *ngIf="recetas.length === 0" style="color: #6b7280; text-align: center; padding: 20px;">Aún no has emitido recetas.</p>
+      <p *ngIf="recetas.length === 0" style="color: #6b7280; text-align: center; padding: 20px;">
+        {{ esMedico ? 'Aún no has emitido recetas.' : 'Aún no tienes recetas registradas.' }}
+      </p>
     </div>
   `,
   styles: [`
@@ -98,11 +116,19 @@ import { MIS_RECETAS, LIST_PACIENTES, LIST_MEDICAMENTOS, EMITIR_RECETA, VERIFICA
     .btn-link { background: none; border: none; color: #0f6e56; cursor: pointer; text-decoration: underline; }
     .btn-icon { background: none; border: none; color: #a32d2d; cursor: pointer; }
     .tx-info { margin-top: 8px; font-size: 11px; color: #6b7280; }
-    .verify-result { margin-top: 8px; background: #f0fdf4; padding: 8px; border-radius: 4px; font-size: 11px; }
+    .verify-result { margin-top: 8px; font-size: 12px; }
+    .verify-ok { background: #d1fae5; color: #065f46; padding: 8px 12px; border-radius: 4px; }
+    .verify-warn { background: #fef3c7; color: #92400e; padding: 8px 12px; border-radius: 4px; }
+    .verify-err { background: #fee2e2; color: #991b1b; padding: 8px 12px; border-radius: 4px; }
+    .diagnostico { margin: 6px 0; font-size: 13px; color: #4b5563; }
   `]
 })
 export class MisRecetasComponent implements OnInit {
   private apollo = inject(Apollo);
+  private supabase = inject(SupabaseService);
+
+  esMedico = false;
+  esPaciente = false;
   recetas: any[] = [];
   pacientes: any[] = [];
   medicamentos: any[] = [];
@@ -112,16 +138,28 @@ export class MisRecetasComponent implements OnInit {
   form = { pacienteId: null as string | null, diagnostico: '', detalles: [] as any[] };
 
   ngOnInit() {
-    this.cargar();
-    this.apollo.query<any>({ query: LIST_PACIENTES, variables: { q: null } })
-      .subscribe(r => this.pacientes = r.data?.pacientes ?? []);
-    this.apollo.query<any>({ query: LIST_MEDICAMENTOS, variables: { q: null, activo: true } })
-      .subscribe(r => this.medicamentos = r.data?.medicamentos ?? []);
+    this.supabase.role$.pipe(take(1)).subscribe(rol => {
+      this.esMedico = rol === 'MEDICO';
+      this.esPaciente = rol === 'PACIENTE';
+      this.cargar();
+      if (this.esMedico) {
+        // Solo el medico necesita catalogos para el form de emitir
+        this.apollo.query<any>({ query: LIST_PACIENTES, variables: { q: null } })
+          .subscribe(r => this.pacientes = r.data?.pacientes ?? []);
+        this.apollo.query<any>({ query: LIST_MEDICAMENTOS, variables: { q: null, activo: true } })
+          .subscribe(r => this.medicamentos = r.data?.medicamentos ?? []);
+      }
+    });
   }
 
   cargar() {
-    this.apollo.query<any>({ query: MIS_RECETAS, fetchPolicy: 'network-only' })
-      .subscribe({ next: r => this.recetas = r.data?.misRecetas ?? [], error: () => this.recetas = [] });
+    if (this.esPaciente) {
+      this.apollo.query<any>({ query: MIS_RECETAS_PACIENTE, fetchPolicy: 'network-only' })
+        .subscribe({ next: r => this.recetas = r.data?.misRecetasPaciente ?? [], error: () => this.recetas = [] });
+    } else {
+      this.apollo.query<any>({ query: MIS_RECETAS, fetchPolicy: 'network-only' })
+        .subscribe({ next: r => this.recetas = r.data?.misRecetas ?? [], error: () => this.recetas = [] });
+    }
   }
 
   agregarItem() {
@@ -154,6 +192,13 @@ export class MisRecetasComponent implements OnInit {
 
   verificar(r: any) {
     this.apollo.query<any>({ query: VERIFICAR_RECETA, variables: { id: r.id }, fetchPolicy: 'network-only' })
-      .subscribe(res => this.verificaciones[r.id] = res.data?.verificarReceta);
+      .subscribe({
+        next: res => this.verificaciones[r.id] = res.data?.verificarReceta || { error: 'Sin respuesta' },
+        error: e => this.verificaciones[r.id] = { exists: false, error: e.message }
+      });
+  }
+
+  formatTs(timestamp: number): string {
+    return new Date(timestamp * 1000).toLocaleString();
   }
 }

@@ -100,6 +100,16 @@ export const VERIFICAR_RECETA = gql`
   }
 `;
 
+export const MIS_RECETAS_PACIENTE = gql`
+  query MisRecetasPaciente {
+    misRecetasPaciente {
+      id fechaEmision controlado blockchainTx hashDocumento estado
+      medicoNombre diagnostico
+      detalles { medicamento { nombre } cantidad posologia }
+    }
+  }
+`;
+
 // === Categorias / Proveedores ===
 export const LIST_CATEGORIAS = gql`query { categorias { id nombre } }`;
 
