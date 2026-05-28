@@ -1,0 +1,32 @@
+type Paciente {
+  id: UUID!
+  supabaseUid: String
+  ci: String!
+  nombre: String!
+  apellido: String!
+  telefono: String
+  email: String
+  fechaNacimiento: Date
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PacienteInput {
+  ci: String!
+  nombre: String!
+  apellido: String!
+  telefono: String
+  email: String
+  fechaNacimiento: Date
+  supabaseUid: String
+}
+
+extend type Query {
+  pacientes(q: String): [Paciente!]!
+  paciente(id: UUID!): Paciente
+}
+
+extend type Mutation {
+  crearPaciente(input: PacienteInput!): Paciente!
+  actualizarPaciente(id: UUID!, input: PacienteInput!): Paciente!
+}

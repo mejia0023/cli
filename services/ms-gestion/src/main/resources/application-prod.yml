@@ -1,0 +1,16 @@
+spring:
+  graphql:
+    graphiql:
+      enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+logging:
+  level:
+    com.clinica.gestion: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN

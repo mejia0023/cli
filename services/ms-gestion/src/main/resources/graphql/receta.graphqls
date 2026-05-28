@@ -1,0 +1,60 @@
+enum EstadoReceta { EMITIDA DISPENSADA ANULADA }
+
+type Receta {
+  id: UUID!
+  paciente: Paciente!
+  medicoNombre: String!
+  medicoUid: String!
+  diagnostico: String
+  fechaEmision: DateTime!
+  controlado: Boolean!
+  hashDocumento: String
+  blockchainTx: String
+  blockchainId: Float
+  estado: EstadoReceta!
+  detalles: [DetalleReceta!]!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type DetalleReceta {
+  id: UUID!
+  medicamento: Medicamento!
+  cantidad: Int!
+  posologia: String
+}
+
+input DetalleRecetaInput {
+  medicamentoId: UUID!
+  cantidad: Int!
+  posologia: String
+}
+
+input RecetaInput {
+  pacienteId: UUID!
+  medicoNombre: String!
+  medicoUid: String!
+  diagnostico: String
+  detalles: [DetalleRecetaInput!]!
+}
+
+type VerificacionReceta {
+  exists: Boolean!
+  id: Float
+  timestamp: Float
+  blockNumber: Float
+  razon: String
+  error: String
+}
+
+extend type Query {
+  receta(id: UUID!): Receta
+  recetasPorPaciente(pacienteId: UUID!): [Receta!]!
+  misRecetas: [Receta!]!
+  misRecetasPaciente: [Receta!]!
+  verificarReceta(id: UUID!): VerificacionReceta!
+}
+
+extend type Mutation {
+  emitirReceta(input: RecetaInput!): Receta!
+}

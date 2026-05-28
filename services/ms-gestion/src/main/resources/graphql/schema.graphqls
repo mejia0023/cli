@@ -1,0 +1,31 @@
+# Esquema raiz de ms-gestion
+# Cada archivo de dominio extiende Query/Mutation con sus operaciones.
+
+scalar UUID
+scalar DateTime
+scalar Date
+scalar BigDecimal
+
+type Query {
+  health: String!
+}
+
+type Mutation {
+  _empty: String
+}
+
+# Paginacion comun
+input PageInput {
+  page: Int = 0
+  size: Int = 20
+  sortBy: String
+  sortDir: String = "ASC"
+}
+
+# Enum de rol (compartido)
+enum RolEnum {
+  ADMINISTRADOR
+  MEDICO
+  FARMACEUTICO
+  PACIENTE
+}

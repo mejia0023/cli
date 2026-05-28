@@ -1,0 +1,37 @@
+type VentaDiariaPoint {
+  dia: Date!
+  numFacturas: Float!
+  totalVendido: BigDecimal!
+  ticketPromedio: BigDecimal!
+}
+
+type TopMedicamentoItem {
+  medicamentoId: UUID!
+  medicamento: String!
+  unidadesVendidas: Float!
+  montoTotal: BigDecimal!
+  numFacturas: Float!
+}
+
+type InventarioCriticoItem {
+  medicamentoId: UUID!
+  medicamento: String!
+  stockMinimo: Int!
+  stockActual: Float!
+  nivel: String!
+}
+
+type RecetaBlockchainPoint {
+  mes: Date!
+  totalRecetas: Float!
+  registradasEnBlockchain: Float!
+  controladas: Float!
+  dispensadas: Float!
+}
+
+extend type Query {
+  biVentasDiarias(desde: Date, hasta: Date): [VentaDiariaPoint!]!
+  biTopMedicamentos(limit: Int): [TopMedicamentoItem!]!
+  biInventarioCritico: [InventarioCriticoItem!]!
+  biRecetasBlockchain(desde: Date, hasta: Date): [RecetaBlockchainPoint!]!
+}

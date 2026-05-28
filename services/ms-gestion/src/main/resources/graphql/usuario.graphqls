@@ -1,0 +1,21 @@
+type Usuario {
+  id: UUID!
+  supabaseUid: String!
+  nombre: String!
+  email: String!
+  rol: RolEnum!
+  activo: Boolean!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+extend type Query {
+  usuarios: [Usuario!]!
+  usuario(id: UUID!): Usuario
+  me: Usuario
+}
+
+extend type Mutation {
+  cambiarRolUsuario(id: UUID!, rol: RolEnum!): Usuario!
+  desactivarUsuario(id: UUID!): Usuario!
+}

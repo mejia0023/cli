@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: ms-gestion
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/clinica_gestion}
+    username: ${DB_USER:clinica}
+    password: ${DB_PASS:clinica}
+    hikari:
+      maximum-pool-size: 10
+      data-source-properties:
+        stringtype: unspecified
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  graphql:
+    graphiql:
+      enabled: true
+      path: /graphiql
+    schema:
+      locations: classpath:graphql/
+
+server:
+  port: ${PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+app:
+  blockchain:
+    base-url: ${BLOCKCHAIN_URL:http://localhost:3001}
+    enabled: ${BLOCKCHAIN_ENABLED:true}
+    timeout-seconds: 5
+  supabase:
+    jwks-uri: ${SUPABASE_JWKS_URI:}
+    issuer: ${SUPABASE_ISSUER:}
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:4200,http://localhost:8081}
+
+logging:
+  level:
+    com.clinica.gestion: INFO
+    org.springframework.security: INFO
+    org.hibernate.SQL: INFO

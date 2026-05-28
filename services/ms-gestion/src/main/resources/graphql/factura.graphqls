@@ -1,0 +1,51 @@
+enum MetodoPago { EFECTIVO TARJETA TRANSFERENCIA QR }
+enum EstadoFactura { PENDIENTE PAGADA ANULADA }
+
+type Factura {
+  id: UUID!
+  numero: String!
+  paciente: Paciente
+  usuario: Usuario!
+  fecha: DateTime!
+  subtotal: BigDecimal!
+  descuento: BigDecimal!
+  total: BigDecimal!
+  metodoPago: MetodoPago!
+  estado: EstadoFactura!
+  detalles: [DetalleFactura!]!
+  createdAt: DateTime
+}
+
+type DetalleFactura {
+  id: UUID!
+  medicamento: Medicamento!
+  lote: Lote!
+  receta: Receta
+  cantidad: Int!
+  precioUnitario: BigDecimal!
+  subtotal: BigDecimal!
+}
+
+input ItemFacturaInput {
+  medicamentoId: UUID!
+  cantidad: Int!
+  recetaId: UUID
+}
+
+input FacturaInput {
+  pacienteId: UUID
+  metodoPago: MetodoPago!
+  descuento: BigDecimal
+  items: [ItemFacturaInput!]!
+}
+
+extend type Query {
+  facturas: [Factura!]!
+  factura(id: UUID!): Factura
+  misFacturas: [Factura!]!
+}
+
+extend type Mutation {
+  crearFactura(input: FacturaInput!): Factura!
+  anularFactura(id: UUID!, motivo: String): Factura!
+}

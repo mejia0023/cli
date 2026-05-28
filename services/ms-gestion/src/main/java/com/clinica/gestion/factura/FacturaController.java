@@ -1,0 +1,61 @@
+package com.clinica.gestion.factura;
+
+import com.clinica.gestion.common.context.UsuarioContext;
+import com.clinica.gestion.paciente.Paciente;
+import com.clinica.gestion.paciente.PacienteRepository;
+import com.clinica.gestion.usuario.Usuario;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.graphql.data.method.annotation.Argument;
+import org.springframework.graphql.data.method.annotation.MutationMapping;
+import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+
+@Controller
+@RequiredArgsConstructor
+public class FacturaController {
+
+    private final FacturaService facturaService;
+    private final PacienteRepository pacienteRepository;
+
+    @QueryMapping
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR','FARMACEUTICO')")
+    public List<Factura> facturas() {
+        return facturaService.listar();
+    }
+
+    @QueryMapping
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR','FARMACEUTICO')")
+    public Factura factura(@Argument UUID id) {
+        return facturaService.findById(id);
+    }
+
+    @QueryMapping
+    @PreAuthorize("hasRole('PACIENTE')")
+    public List<Factura> misFacturas() {
+        Usuario u = UsuarioContext.current();
+        if (u == null) throw new AccessDeniedException("Usuario no autenticado");
+        return pacienteRepository.findBySupabaseUid(u.getSupabaseUid())
+                .map(Paciente::getId)
+                .map(facturaService::listarPorPaciente)
+                .orElse(Collections.emptyList());
+    }
+
+    @MutationMapping
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR','FARMACEUTICO')")
+    public Factura crearFactura(@Argument @Valid FacturaInput input) {
+        return facturaService.crear(input);
+    }
+
+    @MutationMapping
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR','FARMACEUTICO')")
+    public Factura anularFactura(@Argument UUID id, @Argument String motivo) {
+        return facturaService.anular(id, motivo);
+    }
+}

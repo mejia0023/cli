@@ -1,0 +1,96 @@
+type Categoria {
+  id: Int!
+  nombre: String!
+  descripcion: String
+}
+
+type Proveedor {
+  id: UUID!
+  nombre: String!
+  nit: String
+  telefono: String
+  email: String
+  direccion: String
+  activo: Boolean!
+}
+
+type Medicamento {
+  id: UUID!
+  nombre: String!
+  descripcion: String
+  categoria: Categoria
+  precioVenta: BigDecimal!
+  requiereReceta: Boolean!
+  controlado: Boolean!
+  stockMinimo: Int!
+  activo: Boolean!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MedicamentoInput {
+  nombre: String!
+  descripcion: String
+  categoriaId: Int
+  precioVenta: BigDecimal!
+  requiereReceta: Boolean
+  controlado: Boolean
+  stockMinimo: Int
+}
+
+type Lote {
+  id: UUID!
+  medicamento: Medicamento!
+  proveedor: Proveedor
+  codigoLote: String!
+  fechaVencimiento: Date!
+  cantidadInicial: Int!
+  cantidadActual: Int!
+  precioCompra: BigDecimal!
+  createdAt: DateTime
+}
+
+input LoteInput {
+  medicamentoId: UUID!
+  proveedorId: UUID
+  codigoLote: String!
+  fechaVencimiento: Date!
+  cantidad: Int!
+  precioCompra: BigDecimal!
+}
+
+enum TipoMovimiento { ENTRADA SALIDA AJUSTE }
+
+type MovimientoInventario {
+  id: UUID!
+  lote: Lote!
+  tipo: TipoMovimiento!
+  cantidad: Int!
+  motivo: String
+  fecha: DateTime!
+}
+
+extend type Query {
+  categorias: [Categoria!]!
+  proveedores: [Proveedor!]!
+  proveedor(id: UUID!): Proveedor
+  medicamentos(q: String, activo: Boolean): [Medicamento!]!
+  medicamento(id: UUID!): Medicamento
+  lotesByMedicamento(medicamentoId: UUID!): [Lote!]!
+  movimientosByLote(loteId: UUID!): [MovimientoInventario!]!
+}
+
+extend type Mutation {
+  crearCategoria(nombre: String!, descripcion: String): Categoria!
+  actualizarCategoria(id: Int!, nombre: String, descripcion: String): Categoria!
+
+  crearProveedor(nombre: String!, nit: String, telefono: String, email: String, direccion: String): Proveedor!
+  desactivarProveedor(id: UUID!): Proveedor!
+
+  crearMedicamento(input: MedicamentoInput!): Medicamento!
+  actualizarMedicamento(id: UUID!, input: MedicamentoInput!): Medicamento!
+  desactivarMedicamento(id: UUID!): Medicamento!
+
+  registrarEntradaLote(input: LoteInput!): Lote!
+  ajustarStock(loteId: UUID!, cantidad: Int!, motivo: String!): MovimientoInventario!
+}
