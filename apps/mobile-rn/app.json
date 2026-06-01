@@ -1,0 +1,72 @@
+{
+  "expo": {
+    "name": "Clinica",
+    "slug": "clinica-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "scheme": "clinica",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Esta app usa la camara para tomar fotos de recetas y documentos clinicos.",
+        "NSLocationWhenInUseUsageDescription": "Esta app usa tu ubicacion para registrar la sucursal de la farmacia.",
+        "NSFaceIDUsageDescription": "Esta app usa Face ID para confirmar tu identidad antes de operaciones criticas."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0f6e56",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Esta app usa la camara para tomar fotos de recetas y documentos clinicos."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Esta app usa tu ubicacion para registrar la sucursal de la farmacia."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#0f6e56"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Esta app usa Face ID para confirmar tu identidad."
+        }
+      ]
+    ],
+    "extra": {
+      "supabaseUrl": "<YOUR_SUPABASE_URL>",
+      "supabaseAnonKey": "<YOUR_SUPABASE_PUBLISHABLE_KEY>",
+      "graphqlUrl": "http://192.168.64.97:8080/graphql",
+      "blockchainUrl": "http://192.168.64.97:3001"
+    }
+  }
+}
