@@ -108,3 +108,6 @@ coverage/
 t.t
 *.draft.*
 .scratch/
+infra/
+docs/
+.claude
