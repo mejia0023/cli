@@ -82,12 +82,16 @@ import {
     <div class="grid-charts">
       <div class="card">
         <h3>Ventas por día</h3>
-        <canvas baseChart [data]="ventasChart" [options]="lineOptions" type="line" height="220"></canvas>
+        <div class="chart-wrapper">
+          <canvas baseChart [data]="ventasChart" [options]="lineOptions" type="line"></canvas>
+        </div>
       </div>
 
       <div class="card">
         <h3>Top medicamentos</h3>
-        <canvas baseChart [data]="topChart" [options]="barOptions" type="bar" height="220"></canvas>
+        <div class="chart-wrapper">
+          <canvas baseChart [data]="topChart" [options]="barOptions" type="bar"></canvas>
+        </div>
       </div>
 
       <div class="card">
@@ -111,7 +115,9 @@ import {
 
       <div class="card">
         <h3>Recetas y blockchain (por mes)</h3>
-        <canvas baseChart [data]="bcChart" [options]="stackedBarOptions" type="bar" height="220"></canvas>
+        <div class="chart-wrapper">
+          <canvas baseChart [data]="bcChart" [options]="stackedBarOptions" type="bar"></canvas>
+        </div>
       </div>
     </div>
   `,
@@ -125,6 +131,12 @@ import {
     .kpi-label { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
     .kpi-value { font-size: 24px; font-weight: 700; color: #0f6e56; margin-top: 4px; }
     .grid-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .chart-wrapper { position: relative; height: 280px; width: 100%; }
+    @media (max-width: 767px) {
+      .grid-charts { grid-template-columns: 1fr; }
+      .kpis { grid-template-columns: repeat(2, 1fr); }
+      .chart-wrapper { height: 240px; }
+    }
     .data-table { width: 100%; border-collapse: collapse; }
     .data-table th, .data-table td { padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: left; font-size: 13px; }
     .data-table th { background: #f3f4f6; font-size: 11px; text-transform: uppercase; color: #6b7280; }

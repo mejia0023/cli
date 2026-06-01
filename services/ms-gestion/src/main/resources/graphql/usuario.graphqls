@@ -18,4 +18,6 @@ extend type Query {
 extend type Mutation {
   cambiarRolUsuario(id: UUID!, rol: RolEnum!): Usuario!
   desactivarUsuario(id: UUID!): Usuario!
+  activarUsuario(id: UUID!): Usuario!
+  actualizarUsuario(id: UUID!, nombre: String, email: String): Usuario!
 }

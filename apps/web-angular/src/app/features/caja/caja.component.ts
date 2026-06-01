@@ -32,8 +32,14 @@ interface CartItem {
 
     <div class="grid">
       <div class="card products">
-        <h3>Medicamentos</h3>
-        <input [(ngModel)]="q" (input)="buscarMed()" placeholder="Buscar..." class="search">
+        <h3>Medicamentos disponibles</h3>
+        <div class="field">
+          <label for="caja-search">Buscar medicamento por nombre</label>
+          <input id="caja-search" [(ngModel)]="q" name="qsearch" (input)="buscarMed()"
+                 placeholder="Escribe para filtrar (ej: ibuprofeno)"
+                 class="search">
+        </div>
+        <small class="hint-text">Click en un medicamento para agregarlo al carrito</small>
         <div class="med-list">
           <div *ngFor="let m of medicamentos" class="med-card" (click)="agregar(m)">
             <div>
@@ -50,46 +56,65 @@ interface CartItem {
 
       <div class="card cart">
         <h3>Carrito</h3>
+        <p *ngIf="carrito.length === 0" class="empty-cart">
+          Carrito vacío. Selecciona medicamentos de la lista de la izquierda.
+        </p>
+
         <div *ngFor="let it of carrito; let i = index" class="cart-item">
           <div style="flex:1;">
-            <div>{{ it.nombre }}</div>
+            <div class="cart-item-name">{{ it.nombre }}</div>
             <div *ngIf="it.requiereReceta" class="receta-block">
-              <input [(ngModel)]="it.recetaId" name="r{{i}}" placeholder="ID Receta (UUID)" class="receta-input">
-              <button type="button"
-                      (click)="verificarRecetaItem(i)"
-                      [disabled]="!it.recetaId || it.recetaId.length < 36 || it.verificacion?.loading"
-                      class="btn-verify">
-                {{ it.verificacion?.loading ? '...' : 'Verificar on-chain' }}
-              </button>
+              <label [attr.for]="'rec-' + i" class="receta-label">
+                ID de receta médica <span class="req">*</span>
+              </label>
+              <div class="receta-input-row">
+                <input [id]="'rec-' + i" [(ngModel)]="it.recetaId" [name]="'r' + i"
+                       placeholder="Pega aquí el UUID de la receta"
+                       class="receta-input">
+                <button type="button"
+                        (click)="verificarRecetaItem(i)"
+                        [disabled]="!it.recetaId || it.recetaId.length < 36 || it.verificacion?.loading"
+                        class="btn-verify">
+                  {{ it.verificacion?.loading ? '...' : 'Verificar' }}
+                </button>
+              </div>
               <span *ngIf="it.verificacion?.exists === true" class="badge badge-green">✓ On-chain · Bloque {{ it.verificacion?.blockNumber }}</span>
               <span *ngIf="it.verificacion && it.verificacion.exists === false && !it.verificacion.error" class="badge badge-amber">⚠ No registrada</span>
               <span *ngIf="it.verificacion?.error" class="badge badge-red">✗ {{ it.verificacion?.error }}</span>
             </div>
           </div>
-          <input type="number" [(ngModel)]="it.cantidad" name="c{{i}}" min="1" style="width: 60px;">
-          <span>{{ (it.precio * it.cantidad).toFixed(2) }}</span>
-          <button (click)="quitar(i)" class="btn-icon"><i class="pi pi-times"></i></button>
+          <div class="cant-wrap">
+            <label [attr.for]="'qty-' + i" class="qty-label">Cant.</label>
+            <input [id]="'qty-' + i" type="number" [(ngModel)]="it.cantidad" [name]="'c' + i" min="1" step="1" class="qty-input">
+          </div>
+          <span class="subtotal">Bs {{ (it.precio * it.cantidad).toFixed(2) }}</span>
+          <button (click)="quitar(i)" class="btn-icon" title="Quitar del carrito">
+            <i class="pi pi-times"></i>
+          </button>
         </div>
 
         <div class="total-row">
           <strong>Total: Bs {{ total().toFixed(2) }}</strong>
         </div>
 
-        <label>Paciente (opcional)
-          <select [(ngModel)]="pacienteId" name="paciente">
+        <div class="field">
+          <label for="caja-paciente">Paciente (opcional)</label>
+          <select id="caja-paciente" [(ngModel)]="pacienteId" name="paciente">
             <option [ngValue]="null">— Cliente sin registro —</option>
             <option *ngFor="let p of pacientes" [ngValue]="p.id">{{ p.ci }} · {{ p.nombre }} {{ p.apellido }}</option>
           </select>
-        </label>
+          <small class="hint-text">Si el cliente está registrado, la factura quedará vinculada a su historial.</small>
+        </div>
 
-        <label>Método de pago
-          <select [(ngModel)]="metodoPago" name="metodo">
+        <div class="field">
+          <label for="caja-metodo">Método de pago <span class="req">*</span></label>
+          <select id="caja-metodo" [(ngModel)]="metodoPago" name="metodo" required>
             <option value="EFECTIVO">Efectivo</option>
             <option value="TARJETA">Tarjeta</option>
-            <option value="TRANSFERENCIA">Transferencia</option>
-            <option value="QR">QR</option>
+            <option value="TRANSFERENCIA">Transferencia bancaria</option>
+            <option value="QR">Pago por QR</option>
           </select>
-        </label>
+        </div>
 
         <button (click)="facturar()" [disabled]="carrito.length === 0 || facturando" class="btn-primary">
           {{ facturando ? 'Facturando...' : 'Facturar' }}
@@ -103,8 +128,22 @@ interface CartItem {
   `,
   styles: [`
     .grid { display: grid; grid-template-columns: 1fr 340px; gap: 16px; }
-    .products .search { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; margin-bottom: 12px; }
-    .med-list { max-height: 600px; overflow-y: auto; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+    .field > label { font-size: 12px; font-weight: 600; color: #374151; }
+    .field .req { color: #dc2626; }
+    .hint-text { font-size: 11px; color: #6b7280; margin-top: 2px; }
+    .products .search { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 4px; }
+    .products .search:focus { outline: none; border-color: #0f6e56; box-shadow: 0 0 0 2px rgba(15,110,86,0.15); }
+    .med-list { max-height: 600px; overflow-y: auto; margin-top: 10px; }
+    .empty-cart { padding: 16px; text-align: center; color: #6b7280; font-size: 13px; background: #f9fafb; border-radius: 4px; border: 1px dashed #d1d5db; }
+    .cart-item-name { font-weight: 500; }
+    .cant-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .qty-label { font-size: 10px; color: #6b7280; }
+    .qty-input { width: 60px; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 4px; text-align: center; }
+    .subtotal { min-width: 70px; text-align: right; font-weight: 600; color: #111827; }
+    .receta-label { font-size: 11px; font-weight: 600; color: #92400e; display: block; margin-top: 6px; }
+    .receta-input-row { display: flex; gap: 4px; margin-top: 3px; }
     .med-card {
       display: flex; justify-content: space-between; align-items: center;
       padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px;
@@ -122,16 +161,15 @@ interface CartItem {
       display: flex; align-items: center; gap: 8px;
       padding: 8px 0; border-bottom: 1px solid #f3f4f6;
     }
-    .cart-item input[type=number] { padding: 4px; border: 1px solid #d1d5db; border-radius: 4px; }
     .btn-icon { background: none; border: none; color: #a32d2d; cursor: pointer; }
     .total-row { margin: 16px 0; padding: 12px; background: #f0fdf4; border-radius: 4px; text-align: right; font-size: 16px; }
-    label { display: block; margin-bottom: 12px; font-size: 12px; color: #6b7280; }
-    label select { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; margin-top: 4px; font-size: 14px; }
+    .field select { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px; background: white; }
+    .field select:focus { outline: none; border-color: #0f6e56; box-shadow: 0 0 0 2px rgba(15,110,86,0.15); }
     .btn-primary { width: 100%; padding: 12px; background: #0f6e56; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .success-msg { margin-top: 12px; padding: 8px; background: #d1fae5; color: #065f46; border-radius: 4px; font-size: 13px; }
-    .receta-block { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 4px; }
-    .receta-input { flex: 1 1 auto; min-width: 130px; font-size: 11px; padding: 4px; border: 1px solid #d1d5db; border-radius: 4px; }
+    .receta-block { margin-top: 6px; padding: 8px; background: #fffbeb; border-radius: 4px; border: 1px solid #fde68a; }
+    .receta-input { flex: 1 1 auto; min-width: 130px; font-size: 12px; padding: 5px 8px; border: 1px solid #d1d5db; border-radius: 4px; font-family: monospace; }
     .btn-verify { background: #0f6e56; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; white-space: nowrap; }
     .btn-verify:disabled { opacity: 0.4; cursor: not-allowed; }
     .badge-green { background: #d1fae5; color: #065f46; font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 600; }

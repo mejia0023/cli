@@ -27,6 +27,9 @@ c.c
 **/local.config.*
 *.local.json
 
+# Angular: environment con credenciales reales (usa fileReplacement en dev)
+**/environments/environment.local.ts
+
 # Archivos de notas locales del usuario
 notes.txt
 NOTAS.md
@@ -111,3 +114,4 @@ t.t
 infra/
 docs/
 .claude
+.suba.pase

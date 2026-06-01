@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { map } from 'rxjs';
@@ -10,27 +10,32 @@ import { SupabaseService } from '../../core/auth/supabase.service';
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <aside class="sidebar">
+    <aside class="sidebar"
+           [class.collapsed]="collapsed"
+           [class.mobile-open]="mobileOpen">
       <div class="brand">
         <i class="pi pi-heart-fill"></i>
-        <span>Clinica</span>
+        <span class="label">Clinica</span>
       </div>
       <nav>
         <a *ngFor="let item of items$ | async"
            [routerLink]="item.route"
            routerLinkActive="active"
-           class="nav-item">
+           class="nav-item"
+           [attr.title]="collapsed ? item.label : null"
+           (click)="navItemClick.emit()">
           <i class="pi {{ item.icon }}"></i>
-          <span>{{ item.label }}</span>
+          <span class="label">{{ item.label }}</span>
         </a>
       </nav>
       <div class="bottom" *ngIf="user$ | async as u">
-        <div class="user-info">
+        <div class="user-info" *ngIf="!collapsed">
           <div class="user-name">{{ u.nombre }}</div>
           <div class="user-role">{{ u.rol }}</div>
         </div>
-        <button class="logout" (click)="logout()">
-          <i class="pi pi-sign-out"></i> Salir
+        <button class="logout" (click)="logout()" [attr.title]="collapsed ? 'Salir' : null">
+          <i class="pi pi-sign-out"></i>
+          <span class="label">Salir</span>
         </button>
       </div>
     </aside>
@@ -43,15 +48,26 @@ import { SupabaseService } from '../../core/auth/supabase.service';
       display: flex;
       flex-direction: column;
       height: 100vh;
+      flex-shrink: 0;
+      transition: width 0.2s ease, transform 0.25s ease;
     }
+    .sidebar.collapsed { width: 64px; }
+    .sidebar.collapsed .label { display: none; }
+    .sidebar.collapsed .brand { justify-content: center; padding: 20px 0; }
+    .sidebar.collapsed .nav-item { justify-content: center; padding: 12px 0; gap: 0; }
+    .sidebar.collapsed .bottom { padding: 12px 8px; }
+    .sidebar.collapsed .logout { padding: 8px 0; }
+
     .brand {
       padding: 20px;
       font-size: 18px;
       font-weight: 700;
       border-bottom: 1px solid rgba(255,255,255,0.1);
       display: flex; align-items: center; gap: 10px;
+      white-space: nowrap;
+      overflow: hidden;
     }
-    nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+    nav { flex: 1; padding: 12px 0; overflow-y: auto; overflow-x: hidden; }
     .nav-item {
       display: flex;
       align-items: center;
@@ -61,10 +77,12 @@ import { SupabaseService } from '../../core/auth/supabase.service';
       cursor: pointer;
       text-decoration: none;
       transition: background 0.2s;
+      white-space: nowrap;
+      overflow: hidden;
     }
     .nav-item:hover { background: rgba(255,255,255,0.08); text-decoration: none; }
     .nav-item.active { background: rgba(255,255,255,0.15); color: white; font-weight: 600; }
-    .nav-item i { width: 18px; text-align: center; }
+    .nav-item i { width: 18px; text-align: center; flex-shrink: 0; }
     .bottom {
       padding: 16px 20px;
       border-top: 1px solid rgba(255,255,255,0.1);
@@ -82,11 +100,36 @@ import { SupabaseService } from '../../core/auth/supabase.service';
       font-size: 12px;
       width: 100%;
       display: flex; align-items: center; justify-content: center; gap: 6px;
+      white-space: nowrap;
     }
     .logout:hover { background: rgba(255,255,255,0.1); }
+
+    @media (max-width: 767px) {
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 999;
+        width: 240px;
+        transform: translateX(-100%);
+        box-shadow: 2px 0 16px rgba(0,0,0,0.2);
+      }
+      .sidebar.mobile-open { transform: translateX(0); }
+      /* En mobile el modo rail no aplica: siempre full-width cuando abierto */
+      .sidebar.collapsed { width: 240px; }
+      .sidebar.collapsed .label { display: inline; }
+      .sidebar.collapsed .brand { justify-content: flex-start; padding: 20px; }
+      .sidebar.collapsed .nav-item { justify-content: flex-start; padding: 10px 20px; gap: 12px; }
+      .sidebar.collapsed .bottom { padding: 16px 20px; }
+      .sidebar.collapsed .logout { padding: 6px 12px; }
+    }
   `]
 })
 export class SidebarComponent {
+  @Input() collapsed = false;
+  @Input() mobileOpen = false;
+  @Output() navItemClick = new EventEmitter<void>();
+
   private supabase = inject(SupabaseService);
   user$ = this.supabase.user$;
   items$ = this.supabase.role$.pipe(

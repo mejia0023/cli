@@ -47,6 +47,20 @@ public class UsuarioController {
         return usuarioService.desactivar(id);
     }
 
+    @MutationMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public Usuario activarUsuario(@Argument UUID id) {
+        return usuarioService.activar(id);
+    }
+
+    @MutationMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public Usuario actualizarUsuario(@Argument UUID id,
+                                     @Argument String nombre,
+                                     @Argument String email) {
+        return usuarioService.actualizar(id, nombre, email);
+    }
+
     @SchemaMapping(typeName = "Usuario", field = "rol")
     public RolEnum rolDeUsuario(Usuario usuario) {
         return usuario.getRol().asEnum();

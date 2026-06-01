@@ -1,6 +1,8 @@
 package com.clinica.gestion.security;
 
 import com.clinica.gestion.usuario.RolEnum;
+import com.clinica.gestion.usuario.UsuarioRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -14,7 +16,10 @@ import java.util.Map;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class SupabaseJwtConverter implements Converter<Jwt, AbstractAuthenticationToken> {
+
+    private final UsuarioRepository usuarioRepository;
 
     @Override
     public AbstractAuthenticationToken convert(Jwt jwt) {
@@ -24,17 +29,27 @@ public class SupabaseJwtConverter implements Converter<Jwt, AbstractAuthenticati
     }
 
     private RolEnum extractRol(Jwt jwt) {
+        // 1) claim app_metadata.role (preferido — setealo en Supabase Dashboard)
         Object appMeta = jwt.getClaim("app_metadata");
         if (appMeta instanceof Map<?,?> meta) {
             Object role = meta.get("role");
             if (role != null) return RolEnum.fromString(role.toString());
         }
+        // 2) claim user_metadata.role (fallback)
         Object userMeta = jwt.getClaim("user_metadata");
         if (userMeta instanceof Map<?,?> meta) {
             Object role = meta.get("role");
             if (role != null) return RolEnum.fromString(role.toString());
         }
-        log.warn("JWT sub={} sin claim de rol — asignando PACIENTE", jwt.getSubject());
+        // 3) Fallback a BD por supabase_uid (cubre usuarios seedeados sin claims en Supabase)
+        String uid = jwt.getSubject();
+        if (uid != null) {
+            var u = usuarioRepository.findBySupabaseUid(uid);
+            if (u.isPresent() && u.get().getRol() != null) {
+                return u.get().getRol().asEnum();
+            }
+        }
+        log.warn("JWT sub={} sin rol en claims ni en BD — asignando PACIENTE", uid);
         return RolEnum.PACIENTE;
     }
 }

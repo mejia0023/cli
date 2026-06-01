@@ -132,6 +132,30 @@ export const ME = gql`
   }
 `;
 
+export const CAMBIAR_ROL_USUARIO = gql`
+  mutation CambiarRolUsuario($id: UUID!, $rol: RolEnum!) {
+    cambiarRolUsuario(id: $id, rol: $rol) { id rol }
+  }
+`;
+
+export const DESACTIVAR_USUARIO = gql`
+  mutation DesactivarUsuario($id: UUID!) {
+    desactivarUsuario(id: $id) { id activo }
+  }
+`;
+
+export const ACTIVAR_USUARIO = gql`
+  mutation ActivarUsuario($id: UUID!) {
+    activarUsuario(id: $id) { id activo }
+  }
+`;
+
+export const ACTUALIZAR_USUARIO = gql`
+  mutation ActualizarUsuario($id: UUID!, $nombre: String, $email: String) {
+    actualizarUsuario(id: $id, nombre: $nombre, email: $email) { id nombre email }
+  }
+`;
+
 // === BI ===
 export const BI_VENTAS_DIARIAS = gql`
   query BiVentasDiarias($desde: Date, $hasta: Date) {

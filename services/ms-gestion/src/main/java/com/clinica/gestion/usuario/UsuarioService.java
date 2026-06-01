@@ -68,4 +68,31 @@ public class UsuarioService {
         u.setActivo(false);
         return usuarioRepository.save(u);
     }
+
+    @Transactional
+    public Usuario activar(UUID id) {
+        Usuario u = findById(id);
+        u.setActivo(true);
+        return usuarioRepository.save(u);
+    }
+
+    @Transactional
+    public Usuario actualizar(UUID id, String nombre, String email) {
+        Usuario u = findById(id);
+        if (nombre != null) {
+            String n = nombre.trim();
+            if (n.isEmpty()) throw new BusinessException("Nombre no puede estar vacio");
+            u.setNombre(n);
+        }
+        if (email != null) {
+            String e = email.trim().toLowerCase();
+            if (e.isEmpty()) throw new BusinessException("Email no puede estar vacio");
+            if (!e.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"))
+                throw new BusinessException("Email invalido");
+            if (!e.equals(u.getEmail()) && usuarioRepository.findByEmail(e).isPresent())
+                throw new BusinessException("Email ya esta en uso");
+            u.setEmail(e);
+        }
+        return usuarioRepository.save(u);
+    }
 }

@@ -1,0 +1,21 @@
+/**
+ * Template de environment.local.ts.
+ *
+ * COPIAR a `environment.local.ts` (gitignored) y rellenar con las credenciales
+ * reales de tu proyecto Supabase. El archivo .local.ts se inyecta en lugar de
+ * environment.ts en dev mediante el fileReplacement de angular.json
+ * (configuracion "development").
+ *
+ * Donde sacar los valores en Supabase:
+ *   url     -> Project Settings -> API -> Project URL
+ *   anonKey -> Project Settings -> API Keys -> Publishable (NO service_role)
+ */
+export const environment = {
+  production: false,
+  graphqlUrl: 'http://localhost:8080/graphql',
+  blockchainUrl: 'http://localhost:3001',
+  supabase: {
+    url: '<YOUR_SUPABASE_URL>',
+    anonKey: '<YOUR_SUPABASE_PUBLISHABLE_KEY>'
+  }
+};
