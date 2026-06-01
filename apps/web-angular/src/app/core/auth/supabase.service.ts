@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, map } from 'rxjs';
+import { BehaviorSubject, Observable, filter, map } from 'rxjs';
 import { createClient, SupabaseClient, Session, User, processLock } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
 
@@ -15,8 +15,11 @@ export interface PerfilUsuario {
 @Injectable({ providedIn: 'root' })
 export class SupabaseService {
   private supabase: SupabaseClient;
-  private sessionSubject = new BehaviorSubject<Session | null>(null);
-  session$ = this.sessionSubject.asObservable();
+  // undefined = aún no se consultó Supabase; null = no hay sesión activa
+  private sessionSubject = new BehaviorSubject<Session | null | undefined>(undefined);
+  session$: Observable<Session | null> = this.sessionSubject.asObservable().pipe(
+    filter((s): s is Session | null => s !== undefined)
+  );
 
   user$: Observable<PerfilUsuario | null> = this.session$.pipe(
     map(s => s ? this.perfilDeSession(s) : null)

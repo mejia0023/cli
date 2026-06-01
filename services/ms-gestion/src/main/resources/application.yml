@@ -4,10 +4,12 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
+  # Para correr local debes definir DB_URL/DB_USER/DB_PASS (ver .env.example en la raiz).
+  # NO se publican defaults a Postgres para evitar credenciales hardcodeadas en el repo.
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/clinica_gestion}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASS:postgres}
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASS}
     hikari:
       maximum-pool-size: 10
       data-source-properties:
@@ -52,6 +54,8 @@ app:
     enabled: ${BLOCKCHAIN_ENABLED:true}
     timeout-seconds: 5
   supabase:
+    # Si SUPABASE_JWKS_URI esta vacio, ms-gestion corre en modo DEV sin auth (todo permitAll).
+    # En produccion: setear a https://<tu-proyecto>.supabase.co/auth/v1/.well-known/jwks.json
     jwks-uri: ${SUPABASE_JWKS_URI:}
     issuer: ${SUPABASE_ISSUER:}
   cors:

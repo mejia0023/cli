@@ -8,10 +8,12 @@
 -- IDEMPOTENTE: ON CONFLICT DO NOTHING en cada INSERT. El UPDATE final de stock
 -- recalcula desde movimientos, asi no descuenta el doble si se reaplica.
 --
--- NOTA: usa el supabase_uid REAL del medico_uid (611a93f6-...) — si se aplica
--- sobre una BD donde el UID no se sincronizo, las recetas no apareceran en
--- "Mis recetas" del medico hasta correr:
---   UPDATE receta SET medico_uid = '<UID real>' WHERE medico_uid = '611a93f6-eb88-46b4-89fc-595a7746ec41';
+-- NOTA: las recetas se asignan al medico con medico_uid = 'seed-medico-uid'.
+-- Para que el medico real las vea en "Mis recetas", sincronizar tras el primer
+-- login con el supabase_uid real:
+--   UPDATE receta SET medico_uid = '<UID Supabase del medico>'
+--   WHERE medico_uid = 'seed-medico-uid';
+-- (El UID real lo ves en auth.users de Supabase o decodificando el JWT del medico)
 -- ============================================================================
 
 
@@ -37,20 +39,20 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO receta (id, paciente_id, medico_nombre, medico_uid, diagnostico, fecha_emision, controlado, hash_documento, blockchain_tx, blockchain_id, estado, created_at, updated_at) VALUES
     -- 4 controladas Morfina/Diazepam (3 dispensadas con blockchain simulado, 1 pendiente reciente)
-    ('eeee0001-eeee-0001-eeee-000000000001', 'aaaa1111-aaaa-1111-aaaa-111111111111', 'Dr. Juan Perez', '611a93f6-eb88-46b4-89fc-595a7746ec41', 'Dolor postoperatorio agudo',          NOW() - INTERVAL '25 days',  TRUE,  'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456', '0xa1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456', 100, 'DISPENSADA', NOW() - INTERVAL '25 days', NOW() - INTERVAL '24 days'),
-    ('eeee0002-eeee-0002-eeee-000000000002', 'aaaa2222-aaaa-2222-aaaa-222222222222', 'Dr. Juan Perez', '611a93f6-eb88-46b4-89fc-595a7746ec41', 'Ansiedad cronica',                    NOW() - INTERVAL '20 days',  TRUE,  'b2c3d4e5f67890123456789012345678901bcdef234567890abcdef1234567ab', '0xb2c3d4e5f67890123456789012345678901bcdef234567890abcdef1234567ab', 101, 'DISPENSADA', NOW() - INTERVAL '20 days', NOW() - INTERVAL '19 days'),
-    ('eeee0003-eeee-0003-eeee-000000000003', 'aaaa3333-aaaa-3333-aaaa-333333333333', 'Dr. Juan Perez', '611a93f6-eb88-46b4-89fc-595a7746ec41', 'Dolor severo cronico',                NOW() - INTERVAL '10 days',  TRUE,  'c3d4e5f67890123456789012345678901cdef34567890abcdef1234567abcd12', '0xc3d4e5f67890123456789012345678901cdef34567890abcdef1234567abcd12', 102, 'DISPENSADA', NOW() - INTERVAL '10 days', NOW() - INTERVAL '9 days'),
-    ('eeee0004-eeee-0004-eeee-000000000004', 'aaaa1111-aaaa-1111-aaaa-111111111111', 'Dr. Juan Perez', '611a93f6-eb88-46b4-89fc-595a7746ec41', 'Manejo dolor postquirurgico',         NOW() - INTERVAL '6 hours',  TRUE,  'd4e5f67890123456789012345678901def4567890abcdef1234567abcd123456', NULL, NULL, 'EMITIDA',    NOW() - INTERVAL '6 hours', NOW() - INTERVAL '6 hours'),
+    ('eeee0001-eeee-0001-eeee-000000000001', 'aaaa1111-aaaa-1111-aaaa-111111111111', 'Dr. Juan Perez', 'seed-medico-uid', 'Dolor postoperatorio agudo',          NOW() - INTERVAL '25 days',  TRUE,  'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456', '0xa1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456', 100, 'DISPENSADA', NOW() - INTERVAL '25 days', NOW() - INTERVAL '24 days'),
+    ('eeee0002-eeee-0002-eeee-000000000002', 'aaaa2222-aaaa-2222-aaaa-222222222222', 'Dr. Juan Perez', 'seed-medico-uid', 'Ansiedad cronica',                    NOW() - INTERVAL '20 days',  TRUE,  'b2c3d4e5f67890123456789012345678901bcdef234567890abcdef1234567ab', '0xb2c3d4e5f67890123456789012345678901bcdef234567890abcdef1234567ab', 101, 'DISPENSADA', NOW() - INTERVAL '20 days', NOW() - INTERVAL '19 days'),
+    ('eeee0003-eeee-0003-eeee-000000000003', 'aaaa3333-aaaa-3333-aaaa-333333333333', 'Dr. Juan Perez', 'seed-medico-uid', 'Dolor severo cronico',                NOW() - INTERVAL '10 days',  TRUE,  'c3d4e5f67890123456789012345678901cdef34567890abcdef1234567abcd12', '0xc3d4e5f67890123456789012345678901cdef34567890abcdef1234567abcd12', 102, 'DISPENSADA', NOW() - INTERVAL '10 days', NOW() - INTERVAL '9 days'),
+    ('eeee0004-eeee-0004-eeee-000000000004', 'aaaa1111-aaaa-1111-aaaa-111111111111', 'Dr. Juan Perez', 'seed-medico-uid', 'Manejo dolor postquirurgico',         NOW() - INTERVAL '6 hours',  TRUE,  'd4e5f67890123456789012345678901def4567890abcdef1234567abcd123456', NULL, NULL, 'EMITIDA',    NOW() - INTERVAL '6 hours', NOW() - INTERVAL '6 hours'),
     -- 6 no controladas que requieren receta (Amoxicilina/Enalapril) — DISPENSADAS
-    ('eeee0005-eeee-0005-eeee-000000000005', 'aaaa2222-aaaa-2222-aaaa-222222222222', 'Dr. Juan Perez', '611a93f6-eb88-46b4-89fc-595a7746ec41', 'Infeccion respiratoria',              NOW() - INTERVAL '22 days',  FALSE, NULL, NULL, NULL, 'DISPENSADA', NOW() - INTERVAL '22 days', NOW() - INTERVAL '21 days'),
-    ('eeee0006-eeee-0006-eeee-000000000006', 'aaaa1111-aaaa-1111-aaaa-111111111111', 'Dr. Juan Perez', '611a93f6-eb88-46b4-89fc-595a7746ec41', 'Hipertension arterial',               NOW() - INTERVAL '18 days',  FALSE, NULL, NULL, NULL, 'DISPENSADA', NOW() - INTERVAL '18 days', NOW() - INTERVAL '17 days'),
-    ('eeee0007-eeee-0007-eeee-000000000007', 'aaaa3333-aaaa-3333-aaaa-333333333333', 'Dr. Juan Perez', '611a93f6-eb88-46b4-89fc-595a7746ec41', 'Sinusitis bacteriana',                NOW() - INTERVAL '15 days',  FALSE, NULL, NULL, NULL, 'DISPENSADA', NOW() - INTERVAL '15 days', NOW() - INTERVAL '14 days'),
-    ('eeee0008-eeee-0008-eeee-000000000008', 'aaaa4444-aaaa-4444-aaaa-444444444444', 'Dr. Juan Perez', '611a93f6-eb88-46b4-89fc-595a7746ec41', 'Hipertension grado II',               NOW() - INTERVAL '12 days',  FALSE, NULL, NULL, NULL, 'DISPENSADA', NOW() - INTERVAL '12 days', NOW() - INTERVAL '11 days'),
-    ('eeee0009-eeee-0009-eeee-000000000009', 'aaaa5555-aaaa-5555-aaaa-555555555555', 'Dr. Juan Perez', '611a93f6-eb88-46b4-89fc-595a7746ec41', 'Faringoamigdalitis aguda',            NOW() - INTERVAL '8 days',   FALSE, NULL, NULL, NULL, 'DISPENSADA', NOW() - INTERVAL '8 days',  NOW() - INTERVAL '7 days'),
-    ('eeee0010-eeee-0010-eeee-000000000010', 'aaaa6666-aaaa-6666-aaaa-666666666666', 'Dr. Juan Perez', '611a93f6-eb88-46b4-89fc-595a7746ec41', 'Control hipertension',                NOW() - INTERVAL '5 days',   FALSE, NULL, NULL, NULL, 'DISPENSADA', NOW() - INTERVAL '5 days',  NOW() - INTERVAL '4 days'),
+    ('eeee0005-eeee-0005-eeee-000000000005', 'aaaa2222-aaaa-2222-aaaa-222222222222', 'Dr. Juan Perez', 'seed-medico-uid', 'Infeccion respiratoria',              NOW() - INTERVAL '22 days',  FALSE, NULL, NULL, NULL, 'DISPENSADA', NOW() - INTERVAL '22 days', NOW() - INTERVAL '21 days'),
+    ('eeee0006-eeee-0006-eeee-000000000006', 'aaaa1111-aaaa-1111-aaaa-111111111111', 'Dr. Juan Perez', 'seed-medico-uid', 'Hipertension arterial',               NOW() - INTERVAL '18 days',  FALSE, NULL, NULL, NULL, 'DISPENSADA', NOW() - INTERVAL '18 days', NOW() - INTERVAL '17 days'),
+    ('eeee0007-eeee-0007-eeee-000000000007', 'aaaa3333-aaaa-3333-aaaa-333333333333', 'Dr. Juan Perez', 'seed-medico-uid', 'Sinusitis bacteriana',                NOW() - INTERVAL '15 days',  FALSE, NULL, NULL, NULL, 'DISPENSADA', NOW() - INTERVAL '15 days', NOW() - INTERVAL '14 days'),
+    ('eeee0008-eeee-0008-eeee-000000000008', 'aaaa4444-aaaa-4444-aaaa-444444444444', 'Dr. Juan Perez', 'seed-medico-uid', 'Hipertension grado II',               NOW() - INTERVAL '12 days',  FALSE, NULL, NULL, NULL, 'DISPENSADA', NOW() - INTERVAL '12 days', NOW() - INTERVAL '11 days'),
+    ('eeee0009-eeee-0009-eeee-000000000009', 'aaaa5555-aaaa-5555-aaaa-555555555555', 'Dr. Juan Perez', 'seed-medico-uid', 'Faringoamigdalitis aguda',            NOW() - INTERVAL '8 days',   FALSE, NULL, NULL, NULL, 'DISPENSADA', NOW() - INTERVAL '8 days',  NOW() - INTERVAL '7 days'),
+    ('eeee0010-eeee-0010-eeee-000000000010', 'aaaa6666-aaaa-6666-aaaa-666666666666', 'Dr. Juan Perez', 'seed-medico-uid', 'Control hipertension',                NOW() - INTERVAL '5 days',   FALSE, NULL, NULL, NULL, 'DISPENSADA', NOW() - INTERVAL '5 days',  NOW() - INTERVAL '4 days'),
     -- 2 ANULADAS
-    ('eeee0011-eeee-0011-eeee-000000000011', 'aaaa7777-aaaa-7777-aaaa-777777777777', 'Dr. Juan Perez', '611a93f6-eb88-46b4-89fc-595a7746ec41', 'Bronquitis (paciente no llego)',      NOW() - INTERVAL '7 days',   FALSE, NULL, NULL, NULL, 'ANULADA',    NOW() - INTERVAL '7 days',  NOW() - INTERVAL '6 days'),
-    ('eeee0012-eeee-0012-eeee-000000000012', 'aaaa8888-aaaa-8888-aaaa-888888888888', 'Dr. Juan Perez', '611a93f6-eb88-46b4-89fc-595a7746ec41', 'Error en prescripcion',               NOW() - INTERVAL '3 days',   FALSE, NULL, NULL, NULL, 'ANULADA',    NOW() - INTERVAL '3 days',  NOW() - INTERVAL '2 days')
+    ('eeee0011-eeee-0011-eeee-000000000011', 'aaaa7777-aaaa-7777-aaaa-777777777777', 'Dr. Juan Perez', 'seed-medico-uid', 'Bronquitis (paciente no llego)',      NOW() - INTERVAL '7 days',   FALSE, NULL, NULL, NULL, 'ANULADA',    NOW() - INTERVAL '7 days',  NOW() - INTERVAL '6 days'),
+    ('eeee0012-eeee-0012-eeee-000000000012', 'aaaa8888-aaaa-8888-aaaa-888888888888', 'Dr. Juan Perez', 'seed-medico-uid', 'Error en prescripcion',               NOW() - INTERVAL '3 days',   FALSE, NULL, NULL, NULL, 'ANULADA',    NOW() - INTERVAL '3 days',  NOW() - INTERVAL '2 days')
 ON CONFLICT (id) DO NOTHING;
 
 -- Detalles de receta (que medicamentos en cada receta)

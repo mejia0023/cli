@@ -29,8 +29,7 @@ import { homePorRol } from '../../shared/layout/menu-items';
         </form>
 
         <div class="hint">
-          Usuarios de prueba: admin / medico / farma / paciente &#64;clinica.com<br>
-          Contrase&ntilde;a: <strong>Clinica123!</strong>
+          Ingresa con tu cuenta de Supabase.
         </div>
       </div>
     </div>
