@@ -52,7 +52,10 @@ app:
   blockchain:
     base-url: ${BLOCKCHAIN_URL:http://localhost:3001}
     enabled: ${BLOCKCHAIN_ENABLED:true}
-    timeout-seconds: 5
+    # 45s: registrar una tx en Polygon Amoy implica esperar a que se mine el
+    # bloque (~3-8s) + posibles reintentos internos. 5s era muy corto y causaba
+    # timeouts falsos -> recetas marcadas "pendiente" aunque YA estaban on-chain.
+    timeout-seconds: 45
   supabase:
     # Si SUPABASE_JWKS_URI esta vacio, ms-gestion corre en modo DEV sin auth (todo permitAll).
     # En produccion: setear a https://<tu-proyecto>.supabase.co/auth/v1/.well-known/jwks.json

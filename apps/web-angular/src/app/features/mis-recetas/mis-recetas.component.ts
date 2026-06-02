@@ -114,8 +114,8 @@ import { SupabaseService } from '../../core/auth/supabase.service';
             <strong *ngIf="!esMedico">{{ r.medicoNombre }}</strong>
             <span class="meta">{{ r.fechaEmision | date:'short' }}</span>
             <span *ngIf="r.controlado" class="badge badge-red">Controlado</span>
-            <span *ngIf="r.blockchainTx" class="badge badge-green">On-chain</span>
-            <span *ngIf="r.controlado && !r.blockchainTx" class="badge badge-amber">Pendiente blockchain</span>
+            <span *ngIf="r.blockchainTx || r.blockchainId" class="badge badge-green">On-chain</span>
+            <span *ngIf="r.controlado && !r.blockchainTx && !r.blockchainId" class="badge badge-amber">Pendiente blockchain</span>
           </div>
           <button (click)="verificar(r)" class="btn-link">Verificar integridad</button>
         </div>

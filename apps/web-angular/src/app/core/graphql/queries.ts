@@ -77,7 +77,7 @@ export const EMITIR_RECETA = gql`
   mutation EmitirReceta($input: RecetaInput!) {
     emitirReceta(input: $input) {
       id fechaEmision controlado blockchainTx estado
-      detalles { medicamento { nombre } cantidad }
+      detalles { medicamento { id nombre } cantidad }
     }
   }
 `;
@@ -85,9 +85,9 @@ export const EMITIR_RECETA = gql`
 export const MIS_RECETAS = gql`
   query MisRecetas {
     misRecetas {
-      id fechaEmision controlado blockchainTx hashDocumento estado
+      id fechaEmision controlado blockchainTx blockchainId hashDocumento estado
       paciente { id nombre apellido }
-      detalles { medicamento { nombre } cantidad posologia }
+      detalles { medicamento { id nombre } cantidad posologia }
     }
   }
 `;
@@ -103,9 +103,9 @@ export const VERIFICAR_RECETA = gql`
 export const MIS_RECETAS_PACIENTE = gql`
   query MisRecetasPaciente {
     misRecetasPaciente {
-      id fechaEmision controlado blockchainTx hashDocumento estado
+      id fechaEmision controlado blockchainTx blockchainId hashDocumento estado
       medicoNombre diagnostico
-      detalles { medicamento { nombre } cantidad posologia }
+      detalles { medicamento { id nombre } cantidad posologia }
     }
   }
 `;

@@ -6,7 +6,7 @@ const MIS_FACTURAS = gql`
   query MisFacturas {
     misFacturas {
       id numero fecha total metodoPago estado
-      detalles { medicamento { nombre } cantidad subtotal }
+      detalles { medicamento { id nombre } cantidad subtotal }
     }
   }
 `;

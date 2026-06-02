@@ -139,7 +139,10 @@ public class RecetaService {
     @Scheduled(fixedDelay = 60_000, initialDelay = 30_000)
     @Transactional
     public void reintentarBlockchainPendientes() {
-        List<Receta> pendientes = recetaRepository.findByControladoTrueAndBlockchainTxIsNull();
+        // Pendiente = no tiene id on-chain (blockchainId IS NULL).
+        // Una receta con blockchainId pero sin txHash YA esta on-chain (caso
+        // idempotente: el server reconocio que el hash ya existia).
+        List<Receta> pendientes = recetaRepository.findByControladoTrueAndBlockchainIdIsNull();
         if (pendientes.isEmpty()) return;
         log.info("Reintentando registro blockchain de {} recetas pendientes", pendientes.size());
         for (Receta r : pendientes) {

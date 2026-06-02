@@ -19,12 +19,15 @@ public class BlockchainClient {
 
     private final WebClient webClient;
     private final boolean enabled;
+    private final Duration timeout;
 
     public BlockchainClient(
             @Qualifier("blockchainWebClient") WebClient webClient,
-            @Value("${app.blockchain.enabled}") boolean enabled) {
+            @Value("${app.blockchain.enabled}") boolean enabled,
+            @Value("${app.blockchain.timeout-seconds}") int timeoutSeconds) {
         this.webClient = webClient;
         this.enabled = enabled;
+        this.timeout = Duration.ofSeconds(timeoutSeconds);
     }
 
     /**
@@ -48,7 +51,7 @@ public class BlockchainClient {
             if (token != null) spec = (WebClient.RequestBodySpec) spec.header("Authorization", "Bearer " + token);
 
             Map response = spec.bodyValue(body).retrieve().bodyToMono(Map.class)
-                    .timeout(Duration.ofSeconds(5))
+                    .timeout(timeout)
                     .onErrorResume(e -> { log.warn("Llamada blockchain fallo: {}", e.getMessage()); return Mono.empty(); })
                     .block();
 
@@ -68,7 +71,7 @@ public class BlockchainClient {
         try {
             return webClient.get().uri(uriBuilder -> uriBuilder.path("/recetas/verificar").queryParam("hash", hash).build())
                     .retrieve().bodyToMono(Map.class)
-                    .timeout(Duration.ofSeconds(5))
+                    .timeout(timeout)
                     .block();
         } catch (Exception e) {
             log.warn("verificarHash fallo: {}", e.getMessage());
