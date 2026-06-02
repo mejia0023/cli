@@ -28,14 +28,18 @@ router.post('/', auth({ roles: ['MEDICO', 'ADMINISTRADOR'] }), async (req, res) 
  * Cualquier rol autenticado.
  */
 router.get('/verificar', auth(), async (req, res) => {
+  const { hash } = req.query;
+  console.log(`[verificar] hash recibido: "${hash}" (len=${(hash || '').length})`);
   try {
-    const { hash } = req.query;
     if (!hash) return res.status(400).json({ error: 'Falta query param ?hash=' });
     const result = await blockchain.verificarPorHash(String(hash));
+    console.log(`[verificar] resultado:`, result);
     res.json(result);
   } catch (e) {
-    console.error('Error en GET /recetas/verificar:', e);
-    res.status(500).json({ error: e.message });
+    console.error('Error en GET /recetas/verificar:', e.message);
+    // Si fallo por hash mal formado o contrato, devolvemos exists=false con razon
+    // en lugar de 500 — el frontend lo trata mejor.
+    res.json({ exists: false, error: e.message });
   }
 });
 
