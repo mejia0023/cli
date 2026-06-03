@@ -15,6 +15,26 @@ function requireRole(ctx: Ctx, ...roles: Rol[]): Actor {
   return a;
 }
 
+/**
+ * Ficha de paciente del actor autenticado. Si aun no esta vinculada por
+ * supabaseUid, intenta AUTO-VINCULAR por email: busca una ficha creada en
+ * recepcion con el mismo correo y sin uid, y le escribe el uid del JWT.
+ * Asi el paciente queda habilitado para auto-agendarse sin tocar la BD.
+ */
+async function pacienteDelActor(ctx: Ctx, a: Actor) {
+  const porUid = await ctx.prisma.paciente.findUnique({ where: { supabaseUid: a.uid } });
+  if (porUid) return porUid;
+  if (!a.email) return null;
+  const porEmail = await ctx.prisma.paciente.findFirst({
+    where: { supabaseUid: null, email: { equals: a.email, mode: 'insensitive' } },
+  });
+  if (!porEmail) return null;
+  return ctx.prisma.paciente.update({
+    where: { id: porEmail.id },
+    data: { supabaseUid: a.uid },
+  });
+}
+
 const DateTime = new GraphQLScalarType({
   name: 'DateTime',
   description: 'Fecha-hora ISO-8601',
@@ -45,7 +65,7 @@ export const resolvers = {
 
     miPaciente(_p: unknown, _a: unknown, ctx: Ctx) {
       const a = requireAuth(ctx);
-      return ctx.prisma.paciente.findUnique({ where: { supabaseUid: a.uid } });
+      return pacienteDelActor(ctx, a);
     },
 
     usuarios(_p: unknown, _a: unknown, ctx: Ctx) {
@@ -82,7 +102,7 @@ export const resolvers = {
 
     async misCitas(_p: unknown, _a: unknown, ctx: Ctx) {
       const a = requireRole(ctx, 'PACIENTE', 'ADMINISTRADOR', 'MEDICO');
-      const pac = await ctx.prisma.paciente.findUnique({ where: { supabaseUid: a.uid } });
+      const pac = await pacienteDelActor(ctx, a);
       if (!pac) return [];
       return ctx.prisma.cita.findMany({ where: { pacienteId: pac.id }, orderBy: { fechaHora: 'desc' } });
     },
@@ -108,7 +128,7 @@ export const resolvers = {
       const a = requireRole(ctx, 'ADMINISTRADOR', 'MEDICO', 'PACIENTE');
       const i = args.input;
       if (a.rol === 'PACIENTE') {
-        const pac = await ctx.prisma.paciente.findUnique({ where: { supabaseUid: a.uid } });
+        const pac = await pacienteDelActor(ctx, a);
         if (!pac || pac.id !== i.pacienteId) {
           throw new GraphQLError('Solo puedes agendar tus propias citas', { extensions: { code: 'FORBIDDEN' } });
         }
