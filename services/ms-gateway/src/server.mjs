@@ -109,6 +109,10 @@ const yoga = createYoga({
   graphqlEndpoint: '/graphql',
   fetchAPI: { Response },
   cors: { origin: '*', methods: ['GET', 'POST', 'OPTIONS'] },
+  // No enmascarar errores: que el error real de cada subgrafo (MS1/MS3) y de
+  // los resolvers cross-service se propague COMPLETO al cliente (mensaje +
+  // originalError + stacktrace en extensions) en lugar de "Unexpected error.".
+  maskedErrors: false,
   context: ({ request }) => ({ authorization: request.headers.get('authorization') || '' }),
 });
 

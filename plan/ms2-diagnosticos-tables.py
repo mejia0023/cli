@@ -24,8 +24,21 @@ from botocore.exceptions import ClientError
 
 REGION = os.environ.get("AWS_REGION", "us-east-1")
 BUCKET = os.environ.get("S3_BUCKET", "medicloud-documentos")
+# DynamoDB Local: export DDB_ENDPOINT_URL=http://localhost:8001
+# (con endpoint local NO se necesita cuenta AWS y se omite la parte de S3).
+DDB_ENDPOINT = os.environ.get("DDB_ENDPOINT_URL", "")
 
-dynamodb = boto3.client("dynamodb", region_name=REGION)
+if DDB_ENDPOINT:
+    dynamodb = boto3.client(
+        "dynamodb",
+        region_name=REGION,
+        endpoint_url=DDB_ENDPOINT,
+        aws_access_key_id="local",
+        aws_secret_access_key="local",
+    )
+    print(f"[INFO] Usando DynamoDB Local en {DDB_ENDPOINT} (se omite S3)")
+else:
+    dynamodb = boto3.client("dynamodb", region_name=REGION)
 s3 = boto3.client("s3", region_name=REGION)
 
 
@@ -148,5 +161,8 @@ if __name__ == "__main__":
     crear_tabla(documento)
     crear_tabla(diagnostico)
     crear_tabla(auditoria)
-    crear_bucket_versionado()
-    print("\nListo. MS2 tiene sus 3 tablas DynamoDB y el bucket S3 versionado.")
+    if DDB_ENDPOINT:
+        print("\nListo. Tablas creadas en DynamoDB Local (S3 omitido: los archivos quedan en disco local).")
+    else:
+        crear_bucket_versionado()
+        print("\nListo. MS2 tiene sus 3 tablas DynamoDB y el bucket S3 versionado.")

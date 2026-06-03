@@ -81,7 +81,15 @@ def diagnosticar(request):
     try:
         resultado = ml_models.predict(image_bytes, modo)
     except Exception as exc:  # noqa: BLE001
-        return Response({'error': f'imagen invalida: {exc}'}, status=400)
+        import traceback as _tb
+        return Response(
+            {
+                'error': f'imagen invalida: {exc}',
+                'exception': exc.__class__.__name__,
+                'traceback': _tb.format_exc(),
+            },
+            status=400,
+        )
 
     item = {
         'diagnostico_id': repo_mod.new_id(),

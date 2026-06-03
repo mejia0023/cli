@@ -11,6 +11,9 @@ const { handleRequest } = createYoga({
   // Next.js usa la Fetch API estandar; le pasamos su Response.
   fetchAPI: { Response },
   cors: { origin: '*', methods: ['GET', 'POST', 'OPTIONS'] },
+  // No enmascarar errores: el error real del resolver/Prisma se devuelve COMPLETO
+  // (mensaje + originalError + stacktrace en extensions) en lugar de un generico.
+  maskedErrors: false,
   context: async ({ request }) => ({
     actor: await actorFromRequest(request),
     prisma,

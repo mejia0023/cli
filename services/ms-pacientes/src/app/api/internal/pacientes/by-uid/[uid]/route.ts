@@ -9,12 +9,27 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(_req: Request, { params }: { params: Promise<{ uid: string }> }) {
   const { uid } = await params;
-  const paciente = await prisma.paciente.findUnique({
-    where: { supabaseUid: uid },
-    select: { id: true },
-  });
-  if (!paciente) {
-    return Response.json({ error: 'paciente no encontrado' }, { status: 404 });
+  try {
+    const paciente = await prisma.paciente.findUnique({
+      where: { supabaseUid: uid },
+      select: { id: true },
+    });
+    if (!paciente) {
+      return Response.json({ error: 'paciente no encontrado' }, { status: 404 });
+    }
+    return Response.json({ id: paciente.id });
+  } catch (err: any) {
+    // Fallo inesperado (ej. BD caida): devolvemos el error COMPLETO en vez de
+    // un 500 opaco, para que el consumidor (MS3) y los logs vean el detalle real.
+    console.error('[ms-pacientes][by-uid] error:', err);
+    return Response.json(
+      {
+        error: err?.message ?? String(err),
+        name: err?.name,
+        code: err?.code,
+        stack: err?.stack,
+      },
+      { status: 500 },
+    );
   }
-  return Response.json({ id: paciente.id });
 }

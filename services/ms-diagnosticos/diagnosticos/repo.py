@@ -79,7 +79,18 @@ class DynamoRepo:
 
     def __init__(self):
         import boto3
-        self.ddb = boto3.resource('dynamodb', region_name=settings.AWS_REGION)
+        endpoint = getattr(settings, 'DDB_ENDPOINT_URL', '')
+        if endpoint:
+            # DynamoDB Local: no valida credenciales, pero boto3 exige alguna.
+            self.ddb = boto3.resource(
+                'dynamodb',
+                region_name=settings.AWS_REGION,
+                endpoint_url=endpoint,
+                aws_access_key_id='local',
+                aws_secret_access_key='local',
+            )
+        else:
+            self.ddb = boto3.resource('dynamodb', region_name=settings.AWS_REGION)
         self.prefix = settings.DDB_PREFIX
 
     def _table(self, table):
@@ -111,5 +122,7 @@ _repo = None
 def get_repo():
     global _repo
     if _repo is None:
-        _repo = DynamoRepo() if settings.USE_AWS else LocalRepo()
+        # DynamoDB si: AWS real (USE_AWS=true) o DynamoDB Local (DDB_ENDPOINT_URL).
+        use_dynamo = settings.USE_AWS or bool(getattr(settings, 'DDB_ENDPOINT_URL', ''))
+        _repo = DynamoRepo() if use_dynamo else LocalRepo()
     return _repo

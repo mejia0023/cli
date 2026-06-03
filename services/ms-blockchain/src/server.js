@@ -5,6 +5,7 @@ const morgan = require('morgan');
 
 const blockchain = require('./services/blockchainService');
 const recetasRouter = require('./routes/recetas');
+const { errorDetails } = require('./utils/errorDetails');
 
 const app = express();
 
@@ -21,7 +22,7 @@ app.get('/health', async (req, res) => {
     const info = blockchain.ready() ? await blockchain.networkInfo() : { ready: false };
     res.json({ status: 'OK', service: 'ms-blockchain', ...info });
   } catch (e) {
-    res.json({ status: 'DEGRADED', service: 'ms-blockchain', error: e.message });
+    res.json({ status: 'DEGRADED', service: 'ms-blockchain', ...errorDetails(e) });
   }
 });
 
@@ -29,7 +30,7 @@ app.use('/recetas', recetasRouter);
 
 app.use((err, req, res, next) => {
   console.error(err);
-  res.status(500).json({ error: err.message });
+  res.status(err.status || err.statusCode || 500).json(errorDetails(err));
 });
 
 const port = process.env.PORT || 3001;

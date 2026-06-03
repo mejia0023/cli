@@ -1,6 +1,7 @@
 const express = require('express');
 const blockchain = require('../services/blockchainService');
 const auth = require('../middleware/auth');
+const { errorDetails } = require('../utils/errorDetails');
 
 const router = express.Router();
 
@@ -19,7 +20,7 @@ router.post('/', auth({ roles: ['MEDICO', 'ADMINISTRADOR'] }), async (req, res) 
     res.json(result);
   } catch (e) {
     console.error('Error en POST /recetas:', e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json(errorDetails(e));
   }
 });
 
@@ -36,10 +37,11 @@ router.get('/verificar', auth(), async (req, res) => {
     console.log(`[verificar] resultado:`, result);
     res.json(result);
   } catch (e) {
-    console.error('Error en GET /recetas/verificar:', e.message);
-    // Si fallo por hash mal formado o contrato, devolvemos exists=false con razon
-    // en lugar de 500 — el frontend lo trata mejor.
-    res.json({ exists: false, error: e.message });
+    console.error('Error en GET /recetas/verificar:', e);
+    // Si fallo por hash mal formado o contrato, devolvemos exists=false con el
+    // error COMPLETO (mensaje + stack + campos) en lugar de 500 — el frontend
+    // lo trata mejor y ahora ve el detalle real del fallo.
+    res.json({ exists: false, ...errorDetails(e) });
   }
 });
 
@@ -53,7 +55,7 @@ router.get('/paciente/:id', auth(), async (req, res) => {
     res.json({ pacienteId: req.params.id, indices });
   } catch (e) {
     console.error('Error en GET /recetas/paciente/:id:', e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json(errorDetails(e));
   }
 });
 

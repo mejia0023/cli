@@ -50,7 +50,8 @@ def anchor(documento_texto: str, paciente_id: str, medico_uid: str, token: str |
                 'id': data.get('id'),
                 'hash': data.get('hash'),
             }
-        log.warning('ms-blockchain respondio %s: %s', resp.status_code, resp.text[:200])
+        # Respuesta no-OK: logueamos cuerpo COMPLETO (sin truncar) para depurar.
+        log.warning('ms-blockchain respondio %s: %s', resp.status_code, resp.text)
     except Exception as exc:  # noqa: BLE001
-        log.warning('anchor a blockchain fallo: %s', exc)
+        log.warning('anchor a blockchain fallo: %s', exc, exc_info=True)
     return None

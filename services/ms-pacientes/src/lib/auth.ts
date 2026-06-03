@@ -38,7 +38,10 @@ export async function actorFromRequest(req: Request): Promise<Actor | null> {
       nombre: userMeta.name,
       rol: normalizeRol(appMeta.role ?? userMeta.role),
     };
-  } catch {
+  } catch (err) {
+    // Token presente pero invalido (firma/expiracion/issuer): logueamos el
+    // error COMPLETO para depuracion en vez de tragarlo silenciosamente.
+    console.error('[ms-pacientes][auth] verificacion de JWT fallo:', err);
     return null;
   }
 }

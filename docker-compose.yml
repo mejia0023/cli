@@ -36,6 +36,21 @@ services:
     volumes:
       - clinica_pgadmin_data:/var/lib/pgadmin
 
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: clinica_dynamodb
+    restart: unless-stopped
+    # -sharedDb: una sola BD sin importar credenciales/region (ideal para dev)
+    # -dbPath: persiste en el volumen (sin esto seria solo en memoria)
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data"
+    user: root
+    ports:
+      # 8000 lo usa Django (MS2); exponemos DynamoDB Local en 8001
+      - "8001:8000"
+    volumes:
+      - clinica_dynamodb_data:/home/dynamodblocal/data
+
 volumes:
   clinica_postgres_data:
   clinica_pgadmin_data:
+  clinica_dynamodb_data:
