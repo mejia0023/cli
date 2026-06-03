@@ -18,15 +18,10 @@
 
 
 -- ============================================================================
--- PARTE 1 — PACIENTES ADICIONALES (5 nuevos, total 8)
+-- PARTE 1 — PACIENTES (movidos a MS1)
 -- ============================================================================
-INSERT INTO paciente (id, supabase_uid, ci, nombre, apellido, telefono, email, fecha_nacimiento, created_at, updated_at) VALUES
-    ('aaaa4444-aaaa-4444-aaaa-444444444444', NULL, '1122334', 'Maria',   'Lopez',   '70044556', 'maria.lopez@example.com',    '1985-03-15', NOW() - INTERVAL '40 days', NOW() - INTERVAL '40 days'),
-    ('aaaa5555-aaaa-5555-aaaa-555555555555', NULL, '2233445', 'Jose',    'Vargas',  '70055667', 'jose.vargas@example.com',    '1978-07-20', NOW() - INTERVAL '38 days', NOW() - INTERVAL '38 days'),
-    ('aaaa6666-aaaa-6666-aaaa-666666666666', NULL, '3344556', 'Lucia',   'Mamani',  '70066778', 'lucia.mamani@example.com',   '1992-11-08', NOW() - INTERVAL '35 days', NOW() - INTERVAL '35 days'),
-    ('aaaa7777-aaaa-7777-aaaa-777777777777', NULL, '4455667', 'Roberto', 'Quispe',  '70077889', 'roberto.quispe@example.com', '1980-05-30', NOW() - INTERVAL '33 days', NOW() - INTERVAL '33 days'),
-    ('aaaa8888-aaaa-8888-aaaa-888888888888', NULL, '5566778', 'Sandra',  'Flores',  '70088990', 'sandra.flores@example.com',  '1995-09-22', NOW() - INTERVAL '30 days', NOW() - INTERVAL '30 days')
-ON CONFLICT (id) DO NOTHING;
+-- Los pacientes ya no viven en MS3. Los paciente_id usados abajo en recetas y
+-- facturas son UUIDs de referencia (sin FK); su dueño canonico es MS1.
 
 
 -- ============================================================================

@@ -1,7 +1,5 @@
 package com.clinica.gestion.factura;
 
-import com.clinica.gestion.paciente.Paciente;
-import com.clinica.gestion.usuario.Usuario;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -29,13 +27,12 @@ public class Factura {
     @Column(nullable = false, unique = true, length = 30)
     private String numero;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "paciente_id")
-    private Paciente paciente;
+    // Referencias a MS1 (sin FK): paciente y usuario (cajero). Dueño canonico = MS1.
+    @Column(name = "paciente_id")
+    private UUID pacienteId;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "usuario_id", nullable = false)
-    private Usuario usuario;
+    @Column(name = "usuario_id", nullable = false)
+    private UUID usuarioId;
 
     @Column(nullable = false)
     @Builder.Default

@@ -1,0 +1,140 @@
+// =====================================================
+//  MS1 — ms-pacientes  (Next.js + Prisma + PostgreSQL en AWS)
+//  Dueño de: identidad/personal, pacientes, citas e historia clínica.
+//
+//  Cómo se usa en Next.js:
+//    1) Pon este archivo en  services/ms-pacientes/prisma/schema.prisma
+//    2) Define en .env:  DATABASE_URL="postgresql://user:pass@host:5432/ms_pacientes"
+//    3) Genera y aplica:  npx prisma migrate dev --name init
+//    4) Cliente:          import { PrismaClient } from '@prisma/client'
+//
+//  NOTA: Next.js NO embebe la base. La PostgreSQL vive aparte (AWS RDS);
+//        Prisma solo se conecta a ella con DATABASE_URL.
+// =====================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+enum RolNombre {
+  ADMINISTRADOR
+  MEDICO
+  FARMACEUTICO
+  PACIENTE
+}
+
+enum EstadoCita {
+  AGENDADA
+  ATENDIDA
+  CANCELADA
+}
+
+enum EstadoHistoria {
+  ABIERTA
+  CERRADA
+}
+
+// ---------- Identidad / personal ----------
+// La VERDAD del rol vive en Supabase (claim app_metadata.role).
+// Estas tablas son el directorio local de personal de la clínica.
+model Rol {
+  id          Int       @id @default(autoincrement())
+  nombre      RolNombre @unique
+  descripcion String?
+  usuarios    Usuario[]
+
+  @@map("rol")
+}
+
+model Usuario {
+  id          String   @id @default(uuid()) @db.Uuid
+  supabaseUid String   @unique @map("supabase_uid")
+  nombre      String
+  email       String   @unique
+  rolId       Int      @map("rol_id")
+  rol         Rol      @relation(fields: [rolId], references: [id])
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([rolId])
+  @@map("usuario")
+}
+
+// ---------- Paciente (dueño canónico) ----------
+model Paciente {
+  id              String           @id @default(uuid()) @db.Uuid
+  supabaseUid     String?          @unique @map("supabase_uid")
+  ci              String           @unique
+  nombre          String
+  apellido        String
+  telefono        String?
+  email           String?
+  fechaNacimiento DateTime?        @map("fecha_nacimiento") @db.Date
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  citas           Cita[]
+  historia        HistoriaClinica?
+
+  @@map("paciente")
+}
+
+// ---------- Citas (con pre-triaje IA) ----------
+model Cita {
+  id           String     @id @default(uuid()) @db.Uuid
+  pacienteId   String     @map("paciente_id") @db.Uuid
+  paciente     Paciente   @relation(fields: [pacienteId], references: [id])
+  medicoUid    String     @map("medico_uid") // supabase_uid del médico
+  especialidad String? // sugerida por el pre-triaje (MS2)
+  fechaHora    DateTime   @map("fecha_hora")
+  urgencia     String? // nivel de triaje devuelto por la IA de MS2
+  estado       EstadoCita @default(AGENDADA)
+  motivo       String?
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  episodios    Episodio[]
+
+  @@index([pacienteId])
+  @@index([medicoUid])
+  @@map("cita")
+}
+
+// ---------- Historia clínica electrónica ----------
+model HistoriaClinica {
+  id            String         @id @default(uuid()) @db.Uuid
+  pacienteId    String         @unique @map("paciente_id") @db.Uuid
+  paciente      Paciente       @relation(fields: [pacienteId], references: [id])
+  fechaApertura DateTime       @default(now()) @map("fecha_apertura")
+  estado        EstadoHistoria @default(ABIERTA)
+
+  episodios     Episodio[]
+
+  @@map("historia_clinica")
+}
+
+// ---------- Episodio (cada consulta) ----------
+// Inmutable a nivel de aplicación: no se edita ni borra; las correcciones
+// se hacen creando un episodio nuevo. (Prisma no lo fuerza; aplícalo en la lógica.)
+model Episodio {
+  id               String          @id @default(uuid()) @db.Uuid
+  historiaId       String          @map("historia_id") @db.Uuid
+  historia         HistoriaClinica @relation(fields: [historiaId], references: [id])
+  citaId           String?         @map("cita_id") @db.Uuid
+  cita             Cita?           @relation(fields: [citaId], references: [id])
+  medicoUid        String          @map("medico_uid")
+  fecha            DateTime        @default(now())
+  motivoConsulta   String?         @map("motivo_consulta")
+  evolucion        String?
+  diagnosticoTexto String?         @map("diagnostico_texto")
+  createdAt        DateTime        @default(now()) @map("created_at")
+
+  @@index([historiaId])
+  @@map("episodio")
+}

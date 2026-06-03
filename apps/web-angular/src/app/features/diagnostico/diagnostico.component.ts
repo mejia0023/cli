@@ -1,0 +1,119 @@
+import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Apollo } from 'apollo-angular';
+import { LIST_PACIENTES } from '../../core/graphql/queries';
+import { Ms2Service } from '../../core/services/ms2.service';
+
+@Component({
+  selector: 'app-diagnostico',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
+    <h1 class="page-title">Diagnóstico IA</h1>
+
+    <div class="card">
+      <h3>Analizar estudio</h3>
+      <div class="field">
+        <label>Paciente <span class="req">*</span></label>
+        <select [(ngModel)]="pacienteId" [ngModelOptions]="{standalone:true}" (change)="cargarDiag()">
+          <option [ngValue]="null">— Seleccionar —</option>
+          <option *ngFor="let p of pacientes" [ngValue]="p.id">{{ p.ci }} · {{ p.nombre }} {{ p.apellido }}</option>
+        </select>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Imagen del estudio <span class="req">*</span></label>
+          <input type="file" accept="image/*" (change)="onFile($event)"></div>
+        <div class="field"><label>Modelo</label>
+          <select [(ngModel)]="modo" [ngModelOptions]="{standalone:true}">
+            <option value="SUPERVISADO">Supervisado (clasificación)</option>
+            <option value="NO_SUPERVISADO">No supervisado (anomalías)</option>
+          </select></div>
+      </div>
+      <div class="field"><label>Tipo de estudio</label>
+        <input [(ngModel)]="tipoEstudio" [ngModelOptions]="{standalone:true}" placeholder="radiografia"></div>
+      <div *ngIf="error" class="error-banner">{{ error }}</div>
+      <button class="btn-primary" [disabled]="!pacienteId || !file || cargando" (click)="analizar()">
+        {{ cargando ? 'Analizando…' : 'Analizar con IA' }}
+      </button>
+
+      <div *ngIf="resultado" class="resultado" [class.alerta]="resultado.hallazgo==='anomalo' || resultado.hallazgo==='atipico'">
+        <strong>Resultado:</strong> {{ resultado.hallazgo }}
+        · confianza {{ (resultado.confianza * 100) | number:'1.0-1' }}%
+        · <span class="badge">{{ resultado.modo }}</span>
+        <span class="meta">modelo {{ resultado.modelo_version }}</span>
+      </div>
+    </div>
+
+    <div class="card" *ngIf="pacienteId">
+      <h3>Diagnósticos del paciente</h3>
+      <table class="tabla" *ngIf="diagnosticos.length">
+        <tr><th>Fecha</th><th>Estudio</th><th>Hallazgo</th><th>Confianza</th><th>Modo</th></tr>
+        <tr *ngFor="let d of diagnosticos">
+          <td>{{ d.created_at | date:'short' }}</td><td>{{ d.tipo_estudio }}</td>
+          <td>{{ d.hallazgo }}</td><td>{{ (d.confianza*100) | number:'1.0-1' }}%</td><td>{{ d.modo }}</td>
+        </tr>
+      </table>
+      <p *ngIf="diagnosticos.length === 0" class="empty">Sin diagnósticos.</p>
+    </div>
+  `,
+  styles: [`
+    .field { display:flex; flex-direction:column; gap:4px; margin-bottom:12px; max-width:480px; }
+    .field label { font-size:12px; font-weight:600; color:#374151; } .req { color:#dc2626; }
+    .field input, .field select { padding:8px 10px; border:1px solid #d1d5db; border-radius:4px; font-size:14px; background:#fff; }
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; max-width:480px; }
+    .error-banner { padding:8px 12px; background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; border-radius:4px; font-size:13px; margin:10px 0; }
+    .resultado { margin-top:14px; padding:12px; border-radius:6px; background:#d1fae5; color:#065f46; font-size:14px; }
+    .resultado.alerta { background:#fef3c7; color:#92400e; }
+    .badge { font-size:10px; padding:2px 6px; border-radius:3px; font-weight:600; background:#e5e7eb; color:#374151; }
+    .meta { margin-left:8px; font-size:11px; color:#6b7280; }
+    .tabla { width:100%; border-collapse:collapse; font-size:13px; }
+    .tabla th, .tabla td { text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb; }
+    .empty { color:#6b7280; text-align:center; padding:16px; }
+  `]
+})
+export class DiagnosticoComponent implements OnInit {
+  private apollo = inject(Apollo);
+  private ms2 = inject(Ms2Service);
+
+  pacientes: any[] = [];
+  pacienteId: string | null = null;
+  file: File | null = null;
+  modo = 'SUPERVISADO';
+  tipoEstudio = 'radiografia';
+  cargando = false;
+  error = '';
+  resultado: any = null;
+  diagnosticos: any[] = [];
+
+  ngOnInit() {
+    this.apollo.query<any>({ query: LIST_PACIENTES, variables: { q: null } })
+      .subscribe(r => this.pacientes = r.data?.pacientes ?? []);
+  }
+
+  onFile(ev: Event) {
+    const input = ev.target as HTMLInputElement;
+    this.file = input.files && input.files.length ? input.files[0] : null;
+  }
+
+  analizar() {
+    if (!this.pacienteId || !this.file) return;
+    this.cargando = true; this.error = ''; this.resultado = null;
+    const fd = new FormData();
+    fd.append('imagen', this.file);
+    fd.append('paciente_id', this.pacienteId);
+    fd.append('modo', this.modo);
+    fd.append('tipo_estudio', this.tipoEstudio || 'radiografia');
+    this.ms2.diagnosticar(fd).subscribe({
+      next: r => { this.cargando = false; this.resultado = r; this.cargarDiag(); },
+      error: e => { this.cargando = false; this.error = e?.error?.error || e.message || 'Error al analizar'; }
+    });
+  }
+
+  cargarDiag() {
+    if (!this.pacienteId) { this.diagnosticos = []; return; }
+    this.ms2.listarDiagnosticos(this.pacienteId).subscribe({
+      next: r => this.diagnosticos = r ?? [], error: () => this.diagnosticos = []
+    });
+  }
+}

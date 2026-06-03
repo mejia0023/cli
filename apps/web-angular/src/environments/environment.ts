@@ -11,7 +11,8 @@
  */
 export const environment = {
   production: false,
-  graphqlUrl: 'http://localhost:8080/graphql',
+  graphqlUrl: 'http://localhost:4000/graphql',
+  ms2Url: 'http://localhost:8000',
   blockchainUrl: 'http://localhost:3001',
   supabase: {
     // Project URL: Project Settings -> API -> Project URL

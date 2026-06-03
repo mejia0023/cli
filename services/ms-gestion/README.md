@@ -38,7 +38,7 @@ Abrir: http://localhost:8080/graphiql
 .\mvnw clean
 
 # Verificar migraciones aplicadas
-docker exec -it clinica_postgres psql -U clinica -d clinica_gestion -c "select * from flyway_schema_history order by installed_rank desc limit 5;"
+docker exec -it clinica_postgres psql -U clinica -d ms_gestion -c "select * from flyway_schema_history order by installed_rank desc limit 5;"
 ```
 
 ## Estructura

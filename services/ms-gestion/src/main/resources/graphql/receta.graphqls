@@ -2,7 +2,7 @@ enum EstadoReceta { EMITIDA DISPENSADA ANULADA }
 
 type Receta {
   id: UUID!
-  paciente: Paciente!
+  pacienteId: UUID!
   medicoNombre: String!
   medicoUid: String!
   diagnostico: String

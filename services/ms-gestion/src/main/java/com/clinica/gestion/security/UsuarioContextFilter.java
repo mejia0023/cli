@@ -2,13 +2,10 @@ package com.clinica.gestion.security;
 
 import com.clinica.gestion.common.context.UsuarioContext;
 import com.clinica.gestion.usuario.RolEnum;
-import com.clinica.gestion.usuario.Usuario;
-import com.clinica.gestion.usuario.UsuarioService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,12 +14,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.UUID;
 
+/**
+ * Pobla {@link UsuarioContext} con los datos del JWT de Supabase para el request
+ * actual. No consulta BD: usuario/rol ya no viven en MS3 (estan en MS1/Supabase).
+ */
 @Slf4j
-@RequiredArgsConstructor
 public class UsuarioContextFilter extends OncePerRequestFilter {
-
-    private final UsuarioService usuarioService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
@@ -35,14 +34,18 @@ public class UsuarioContextFilter extends OncePerRequestFilter {
                 String email = jwt.getToken().getClaim("email");
                 String nombre = extractNombre(jwt);
                 RolEnum rol = extractRol(jwt);
-                Usuario u = usuarioService.findOrCreate(uid, email, nombre, rol);
-                UsuarioContext.set(u);
+                UsuarioContext.set(new UsuarioContext.Actor(parseUuid(uid), uid, email, nombre, rol));
             } catch (Exception e) {
-                log.warn("Error provisioning usuario desde JWT: {}", e.getMessage());
+                log.warn("Error poblando UsuarioContext desde JWT: {}", e.getMessage());
             }
         }
         try { chain.doFilter(req, res); }
         finally { UsuarioContext.clear(); }
+    }
+
+    private static UUID parseUuid(String s) {
+        try { return s == null ? null : UUID.fromString(s); }
+        catch (IllegalArgumentException e) { return null; }  // sub no-UUID (modo dev/seed)
     }
 
     private String extractNombre(JwtAuthenticationToken jwt) {

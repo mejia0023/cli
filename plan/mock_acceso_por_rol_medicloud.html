@@ -1,0 +1,44 @@
+<h2 class="sr-only">Mock interactivo de la app MediCloud: elige un rol (administrador, médico, farmacéutico o paciente) para ver su sidebar y los módulos a los que accede.</h2>
+<div id="rolebar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-lg);overflow:hidden">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary)">
+    <span style="font-weight:500;font-size:15px"><i class="ti ti-stethoscope" style="vertical-align:-2px;margin-right:6px" aria-hidden="true"></i>MediCloud</span>
+    <span id="rolebadge" style="font-size:12px;padding:4px 12px;border-radius:var(--border-radius-md)"></span>
+  </div>
+  <div style="display:grid;grid-template-columns:190px minmax(0,1fr);min-height:340px">
+    <aside id="nav" style="border-right:0.5px solid var(--color-border-tertiary);padding:10px"></aside>
+    <main id="main" style="padding:16px"></main>
+  </div>
+</div>
+<script>
+const MS={ms1:'MS1 · Pacientes',ms2:'MS2 · Diagnóstico/Docs',ms3:'MS3 · Farmacia/Facturación'};
+const R={
+ admin:{label:'Administrador',fill:'#EEEDFE',ink:'#3C3489',
+  nav:[['ti-chart-bar','Dashboard BI'],['ti-users','Usuarios y roles'],['ti-package','Inventario'],['ti-receipt','Facturación'],['ti-file-check','Recetas'],['ti-calendar','Citas'],['ti-clipboard','Historia clínica'],['ti-folder','Documentos'],['ti-activity','Diagnóstico IA']],
+  sub:'Acceso total — supervisión de toda la clínica',
+  cards:[['ti-chart-bar','Dashboard BI','Todos los reportes y gráficos','ms3'],['ti-users','Usuarios y roles','Crea usuarios y asigna roles','ms1'],['ti-package','Inventario','Supervisa stock y lotes','ms3'],['ti-receipt','Facturación','Ve y anula facturas','ms3'],['ti-file-check','Verificar recetas','Valida contra blockchain','ms3'],['ti-folder','Documentos','Acceso total y auditoría','ms2']]},
+ medico:{label:'Médico',fill:'#E1F5EE',ink:'#085041',
+  nav:[['ti-calendar','Mis citas'],['ti-clipboard','Historia clínica'],['ti-file-text','Emitir receta'],['ti-activity','Diagnóstico IA'],['ti-folder','Documentos']],
+  sub:'Atención clínica de sus pacientes',
+  cards:[['ti-calendar','Mis citas','Agenda y atiende pacientes','ms1'],['ti-clipboard','Historia clínica','Consulta y agrega episodios','ms1'],['ti-file-text','Emitir receta','Firma; se ancla en blockchain','ms3'],['ti-activity','Diagnóstico IA','Sube imagen y ve el análisis','ms2'],['ti-folder','Documentos','Estudios del paciente','ms2']]},
+ farma:{label:'Farmacéutico',fill:'#FAEEDA',ink:'#633806',
+  nav:[['ti-package','Inventario'],['ti-pill','Medicamentos'],['ti-receipt','Caja / Facturación'],['ti-file-check','Dispensar receta']],
+  sub:'Farmacia, caja y dispensación',
+  cards:[['ti-package','Inventario','Entradas, salidas, ajustes','ms3'],['ti-pill','Medicamentos','Catálogo y precios','ms3'],['ti-receipt','Caja / Facturación','Cobra y emite facturas','ms3'],['ti-file-check','Dispensar receta','Verifica receta en blockchain','ms3']]},
+ paciente:{label:'Paciente',fill:'#E6F1FB',ink:'#0C447C',
+  nav:[['ti-calendar','Mis citas'],['ti-file-text','Mis recetas'],['ti-receipt','Mis facturas'],['ti-folder','Mis estudios'],['ti-upload','Subir síntomas']],
+  sub:'Solo sus propios datos',
+  cards:[['ti-calendar','Mis citas','Agenda y ve sus turnos','ms1'],['ti-file-text','Mis recetas','Solo las suyas','ms3'],['ti-receipt','Mis facturas','Solo las suyas','ms3'],['ti-folder','Mis estudios','Ve sus imágenes y PDFs','ms2'],['ti-upload','Pre-triaje','Describe síntomas, la IA sugiere','ms2']]}
+};
+let cur='admin';
+const bar=document.getElementById('rolebar');
+Object.keys(R).forEach(k=>{const b=document.createElement('button');b.textContent=R[k].label;b.style.cursor='pointer';b.onclick=()=>{cur=k;render();};bar.appendChild(b);});
+function render(){
+ const r=R[cur];
+ Array.from(bar.children).forEach((b,idx)=>{const k=Object.keys(R)[idx];const on=k===cur;b.style.background=on?R[k].fill:'transparent';b.style.color=on?R[k].ink:'var(--color-text-secondary)';b.style.borderColor=on?R[k].fill:'var(--color-border-secondary)';});
+ const badge=document.getElementById('rolebadge');badge.textContent=r.label;badge.style.background=r.fill;badge.style.color=r.ink;
+ document.getElementById('nav').innerHTML=r.nav.map((n,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:2px;border-radius:var(--border-radius-md);font-size:14px;${i===0?`background:var(--color-background-secondary);border-left:3px solid ${r.ink};color:var(--color-text-primary)`:'color:var(--color-text-secondary);border-left:3px solid transparent'}"><i class="ti ${n[0]}" style="font-size:18px" aria-hidden="true"></i>${n[1]}</div>`).join('');
+ document.getElementById('main').innerHTML=`<div style="margin-bottom:14px"><div style="font-size:18px;font-weight:500">${r.label}</div><div style="font-size:13px;color:var(--color-text-secondary)">${r.sub}</div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">`+r.cards.map(c=>`<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px"><i class="ti ${c[0]}" style="font-size:22px;color:${r.ink}" aria-hidden="true"></i><div style="font-weight:500;font-size:15px;margin:8px 0 2px">${c[1]}</div><div style="font-size:13px;color:var(--color-text-secondary);line-height:1.5">${c[2]}</div><div style="margin-top:10px;font-size:12px;color:var(--color-text-secondary);background:var(--color-background-secondary);display:inline-block;padding:3px 8px;border-radius:var(--border-radius-md)">${MS[c[3]]}</div></div>`).join('')+`</div>`;
+}
+render();
+</script>

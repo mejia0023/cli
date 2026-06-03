@@ -4,8 +4,8 @@ enum EstadoFactura { PENDIENTE PAGADA ANULADA }
 type Factura {
   id: UUID!
   numero: String!
-  paciente: Paciente
-  usuario: Usuario!
+  pacienteId: UUID
+  usuarioId: UUID!
   fecha: DateTime!
   subtotal: BigDecimal!
   descuento: BigDecimal!

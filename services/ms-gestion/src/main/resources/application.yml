@@ -49,6 +49,11 @@ management:
       show-details: when-authorized
 
 app:
+  pacientes:
+    # MS1 (ms-pacientes, Next.js en :3000). Habilitado: resuelve supabase_uid -> pacienteId
+    # para misRecetas/misFacturas del paciente. Degrada a vacio si MS1 no responde.
+    base-url: ${PACIENTES_URL:http://localhost:3000}
+    enabled: ${PACIENTES_ENABLED:true}
   blockchain:
     base-url: ${BLOCKCHAIN_URL:http://localhost:3001}
     enabled: ${BLOCKCHAIN_ENABLED:true}

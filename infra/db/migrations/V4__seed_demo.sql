@@ -1,25 +1,14 @@
 -- ============================================================================
 -- V4__seed_demo.sql — Datos demo para que el frontend tenga contenido
 -- ============================================================================
--- NOTA: los usuarios reales se crean en Supabase Auth y el campo supabase_uid
--- se llena por lazy provisioning al primer login (UsuarioContextFilter).
--- Esta migracion solo precarga los usuarios "tecnicos" para FK de facturas demo.
+-- NOTA (refactor microservicios): las tablas usuario y paciente ya NO viven en
+-- MS3 (van a MS1). Por eso esta migracion ya no inserta usuarios ni pacientes.
+-- Los IDs de cajero/paciente usados en facturas/recetas demo (V5) son UUIDs
+-- "de referencia" sin FK; el dueño canonico de esos registros es MS1.
+--   cajero farma  = 33333333-3333-3333-3333-333333333333
+--   cajero admin  = 11111111-1111-1111-1111-111111111111
+--   pacientes     = aaaa1111.. / aaaa2222.. / aaaa3333.. (y mas en V5)
 -- ============================================================================
-
--- Usuarios demo (supabase_uid placeholder; se actualiza al primer login real)
-INSERT INTO usuario (id, supabase_uid, nombre, email, rol_id, activo) VALUES
-    ('11111111-1111-1111-1111-111111111111', 'seed-admin-uid',    'Admin Demo',         'admin@clinica.com',    1, TRUE),
-    ('22222222-2222-2222-2222-222222222222', 'seed-medico-uid',   'Dr. Juan Perez',     'medico@clinica.com',   2, TRUE),
-    ('33333333-3333-3333-3333-333333333333', 'seed-farma-uid',    'Maria Gonzalez',     'farma@clinica.com',    3, TRUE),
-    ('44444444-4444-4444-4444-444444444444', 'seed-paciente-uid', 'Carlos Rodriguez',   'paciente@clinica.com', 4, TRUE)
-ON CONFLICT (supabase_uid) DO NOTHING;
-
--- Pacientes demo
-INSERT INTO paciente (id, supabase_uid, ci, nombre, apellido, telefono, email, fecha_nacimiento) VALUES
-    ('aaaa1111-aaaa-1111-aaaa-111111111111', 'seed-paciente-uid', '1234567', 'Carlos',  'Rodriguez', '70011223', 'paciente@clinica.com', '1985-04-12'),
-    ('aaaa2222-aaaa-2222-aaaa-222222222222', NULL,                '7654321', 'Ana',     'Mamani',    '70022334', NULL,                   '1990-09-23'),
-    ('aaaa3333-aaaa-3333-aaaa-333333333333', NULL,                '9876543', 'Pedro',   'Choque',    '70033445', NULL,                   '1978-01-07')
-ON CONFLICT (ci) DO NOTHING;
 
 -- Proveedores demo
 INSERT INTO proveedor (id, nombre, nit, telefono, email, direccion) VALUES

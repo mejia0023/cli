@@ -1,0 +1,19 @@
+{
+  "name": "ms-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Gateway GraphQL (schema stitching) que unifica MS1 (pacientes) y MS3 (gestion) en un solo endpoint",
+  "scripts": {
+    "start": "node src/server.mjs",
+    "dev": "node --watch src/server.mjs"
+  },
+  "dependencies": {
+    "@graphql-tools/delegate": "^10.0.0",
+    "@graphql-tools/executor-http": "^1.1.0",
+    "@graphql-tools/stitch": "^9.4.0",
+    "@graphql-tools/wrap": "^10.0.0",
+    "graphql": "^16.9.0",
+    "graphql-yoga": "^5.10.0"
+  }
+}

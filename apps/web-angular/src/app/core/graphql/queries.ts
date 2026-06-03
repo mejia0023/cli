@@ -132,6 +132,12 @@ export const ME = gql`
   }
 `;
 
+export const MI_PACIENTE = gql`
+  query MiPaciente {
+    miPaciente { id ci nombre apellido }
+  }
+`;
+
 export const CAMBIAR_ROL_USUARIO = gql`
   mutation CambiarRolUsuario($id: UUID!, $rol: RolEnum!) {
     cambiarRolUsuario(id: $id, rol: $rol) { id rol }
@@ -185,6 +191,38 @@ export const BI_RECETAS_BLOCKCHAIN = gql`
   query BiRecetasBC($desde: Date, $hasta: Date) {
     biRecetasBlockchain(desde: $desde, hasta: $hasta) {
       mes totalRecetas registradasEnBlockchain controladas dispensadas
+    }
+  }
+`;
+
+// === Citas (MS1, vía Gateway) ===
+export const MIS_CITAS = gql`
+  query MisCitas {
+    misCitas { id especialidad fechaHora urgencia estado motivo medicoUid }
+  }
+`;
+
+export const CITAS = gql`
+  query Citas {
+    citas {
+      id especialidad fechaHora urgencia estado motivo medicoUid
+      paciente { id nombre apellido ci }
+    }
+  }
+`;
+
+export const CREAR_CITA = gql`
+  mutation CrearCita($input: CitaInput!) {
+    crearCita(input: $input) { id especialidad fechaHora urgencia estado motivo }
+  }
+`;
+
+// === Historia clínica (MS1, vía Gateway) ===
+export const HISTORIA_POR_PACIENTE = gql`
+  query HistoriaPorPaciente($pacienteId: ID!) {
+    historiaPorPaciente(pacienteId: $pacienteId) {
+      id estado fechaApertura
+      episodios { id fecha medicoUid motivoConsulta evolucion diagnosticoTexto }
     }
   }
 `;

@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_USER: ${DB_USER:-clinica}
       POSTGRES_PASSWORD: ${DB_PASS:-clinica}
-      POSTGRES_DB: ${DB_NAME:-clinica_gestion}
+      POSTGRES_DB: ${DB_NAME:-ms_gestion}
       # DEV ONLY: confiar en cualquier conexion local; soluciona SCRAM auth de JDBC en Windows.
       # En produccion usar scram-sha-256 con password fuerte.
       POSTGRES_HOST_AUTH_METHOD: trust
@@ -16,7 +16,7 @@ services:
     volumes:
       - clinica_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-clinica} -d ${DB_NAME:-clinica_gestion}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-clinica} -d ${DB_NAME:-ms_gestion}"]
       interval: 10s
       timeout: 5s
       retries: 5

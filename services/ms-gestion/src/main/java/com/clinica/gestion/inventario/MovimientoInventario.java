@@ -1,6 +1,5 @@
 package com.clinica.gestion.inventario;
 
-import com.clinica.gestion.usuario.Usuario;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -33,9 +32,9 @@ public class MovimientoInventario {
     @Column(length = 250)
     private String motivo;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "usuario_id")
-    private Usuario usuario;
+    // Referencia a usuario en MS1 (sin FK): quien hizo el movimiento.
+    @Column(name = "usuario_id")
+    private UUID usuarioId;
 
     @Column(nullable = false)
     @Builder.Default

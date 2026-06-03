@@ -56,7 +56,7 @@ public class InventarioService {
                 .lote(lote).tipo(TipoMovimiento.ENTRADA)
                 .cantidad(in.cantidad())
                 .motivo("Entrada de lote " + in.codigoLote())
-                .usuario(UsuarioContext.current())
+                .usuarioId(UsuarioContext.currentUserId())
                 .build());
         return lote;
     }
@@ -74,7 +74,7 @@ public class InventarioService {
                 .lote(lote).tipo(TipoMovimiento.AJUSTE)
                 .cantidad(cantidad)
                 .motivo(motivo)
-                .usuario(UsuarioContext.current())
+                .usuarioId(UsuarioContext.currentUserId())
                 .build());
     }
 
@@ -105,7 +105,7 @@ public class InventarioService {
                     .lote(l).tipo(TipoMovimiento.SALIDA)
                     .cantidad(tomar)
                     .motivo(motivo)
-                    .usuario(UsuarioContext.current())
+                    .usuarioId(UsuarioContext.currentUserId())
                     .build());
 
             consumos.add(new ConsumoLote(l, tomar));

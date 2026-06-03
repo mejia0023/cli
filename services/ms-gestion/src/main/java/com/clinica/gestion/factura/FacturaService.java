@@ -7,11 +7,8 @@ import com.clinica.gestion.inventario.InventarioService;
 import com.clinica.gestion.inventario.Lote;
 import com.clinica.gestion.medicamento.Medicamento;
 import com.clinica.gestion.medicamento.MedicamentoRepository;
-import com.clinica.gestion.paciente.Paciente;
-import com.clinica.gestion.paciente.PacienteRepository;
 import com.clinica.gestion.receta.Receta;
 import com.clinica.gestion.receta.RecetaRepository;
-import com.clinica.gestion.usuario.Usuario;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +24,6 @@ public class FacturaService {
 
     private final FacturaRepository facturaRepository;
     private final MedicamentoRepository medicamentoRepository;
-    private final PacienteRepository pacienteRepository;
     private final RecetaRepository recetaRepository;
     private final InventarioService inventarioService;
 
@@ -50,16 +46,12 @@ public class FacturaService {
      */
     @Transactional
     public Factura crear(FacturaInput in) {
-        Usuario cajero = UsuarioContext.current();
-        if (cajero == null) throw new BusinessException("Usuario no autenticado");
-
-        Paciente paciente = in.pacienteId() == null ? null
-                : pacienteRepository.findById(in.pacienteId())
-                .orElseThrow(() -> new NotFoundException("Paciente", in.pacienteId()));
+        UUID cajeroId = UsuarioContext.currentUserId();
+        if (cajeroId == null) throw new BusinessException("Usuario no autenticado");
 
         Factura factura = Factura.builder()
                 .numero(generarNumero())
-                .paciente(paciente).usuario(cajero)
+                .pacienteId(in.pacienteId()).usuarioId(cajeroId)
                 .metodoPago(in.metodoPago())
                 .descuento(in.descuento() == null ? BigDecimal.ZERO : in.descuento())
                 .subtotal(BigDecimal.ZERO).total(BigDecimal.ZERO)

@@ -62,6 +62,36 @@ export const APP_ROUTES: Routes = [
         canActivate: [roleGuard],
         data: { roles: ['PACIENTE'] },
         loadComponent: () => import('./features/mis-facturas/mis-facturas.component').then(m => m.MisFacturasComponent)
+      },
+      {
+        path: 'citas',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMINISTRADOR', 'MEDICO', 'PACIENTE'] },
+        loadComponent: () => import('./features/citas/citas.component').then(m => m.CitasComponent)
+      },
+      {
+        path: 'historia',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMINISTRADOR', 'MEDICO'] },
+        loadComponent: () => import('./features/historia/historia.component').then(m => m.HistoriaComponent)
+      },
+      {
+        path: 'diagnostico',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMINISTRADOR', 'MEDICO'] },
+        loadComponent: () => import('./features/diagnostico/diagnostico.component').then(m => m.DiagnosticoComponent)
+      },
+      {
+        path: 'documentos',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMINISTRADOR', 'MEDICO', 'PACIENTE'] },
+        loadComponent: () => import('./features/documentos/documentos.component').then(m => m.DocumentosComponent)
+      },
+      {
+        path: 'pre-triaje',
+        canActivate: [roleGuard],
+        data: { roles: ['PACIENTE'] },
+        loadComponent: () => import('./features/pre-triaje/pre-triaje.component').then(m => m.PreTriajeComponent)
       }
     ]
   },

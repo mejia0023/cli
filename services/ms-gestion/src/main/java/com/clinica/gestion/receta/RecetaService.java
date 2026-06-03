@@ -3,8 +3,6 @@ package com.clinica.gestion.receta;
 import com.clinica.gestion.common.exception.NotFoundException;
 import com.clinica.gestion.medicamento.Medicamento;
 import com.clinica.gestion.medicamento.MedicamentoRepository;
-import com.clinica.gestion.paciente.Paciente;
-import com.clinica.gestion.paciente.PacienteRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -25,7 +23,6 @@ import java.util.stream.Collectors;
 public class RecetaService {
 
     private final RecetaRepository recetaRepository;
-    private final PacienteRepository pacienteRepository;
     private final MedicamentoRepository medicamentoRepository;
     private final BlockchainClient blockchainClient;
 
@@ -46,11 +43,9 @@ public class RecetaService {
 
     @Transactional
     public Receta emitir(RecetaInput in) {
-        Paciente paciente = pacienteRepository.findById(in.pacienteId())
-                .orElseThrow(() -> new NotFoundException("Paciente", in.pacienteId()));
-
+        // paciente_id es una referencia a MS1 (sin FK); no se valida contra BD local.
         Receta receta = Receta.builder()
-                .paciente(paciente)
+                .pacienteId(in.pacienteId())
                 .medicoNombre(in.medicoNombre())
                 .medicoUid(in.medicoUid())
                 .diagnostico(in.diagnostico())
@@ -85,7 +80,7 @@ public class RecetaService {
         r.setHashDocumento(hashLocal);
 
         BlockchainClient.RegistroBlockchain reg = blockchainClient.registrarReceta(
-                canonico, r.getPaciente().getId().toString(), r.getMedicoUid());
+                canonico, r.getPacienteId().toString(), r.getMedicoUid());
         if (reg != null) {
             r.setBlockchainTx(reg.txHash());
             r.setBlockchainId(reg.blockchainId());
@@ -97,7 +92,7 @@ public class RecetaService {
         String items = r.getDetalles().stream()
                 .map(d -> d.getMedicamento().getId() + ":" + d.getCantidad())
                 .sorted().collect(Collectors.joining(","));
-        return "{paciente:" + r.getPaciente().getId() + ",medico:" + r.getMedicoUid()
+        return "{paciente:" + r.getPacienteId() + ",medico:" + r.getMedicoUid()
                 + ",fecha:" + r.getFechaEmision() + ",items:[" + items + "]}";
     }
 

@@ -1,9 +1,6 @@
 package com.clinica.gestion.receta;
 
-import com.clinica.gestion.paciente.Paciente;
-import com.clinica.gestion.paciente.PacienteRepository;
-import com.clinica.gestion.usuario.Usuario;
-import com.clinica.gestion.usuario.UsuarioRepository;
+import com.clinica.gestion.common.client.PacienteClient;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -18,6 +15,7 @@ import org.springframework.stereotype.Controller;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Controller
@@ -25,8 +23,7 @@ import java.util.UUID;
 public class RecetaController {
 
     private final RecetaService recetaService;
-    private final PacienteRepository pacienteRepository;
-    private final UsuarioRepository usuarioRepository;
+    private final PacienteClient pacienteClient;
 
     @QueryMapping
     @PreAuthorize("hasAnyRole('ADMINISTRADOR','MEDICO','FARMACEUTICO')")
@@ -43,16 +40,14 @@ public class RecetaController {
     @QueryMapping
     @PreAuthorize("hasRole('MEDICO')")
     public List<Receta> misRecetas() {
-        String uid = currentSupabaseUid();
-        return recetaService.listarPorMedico(uid);
+        return recetaService.listarPorMedico(currentSupabaseUid());
     }
 
     @QueryMapping
     @PreAuthorize("hasRole('PACIENTE')")
     public List<Receta> misRecetasPaciente() {
-        String uid = currentSupabaseUid();
-        return pacienteRepository.findBySupabaseUid(uid)
-                .map(Paciente::getId)
+        // El mapeo supabase_uid -> pacienteId vive en MS1; se resuelve por HTTP.
+        return pacienteClient.pacienteIdPorSupabaseUid(currentSupabaseUid())
                 .map(recetaService::listarPorPaciente)
                 .orElse(Collections.emptyList());
     }
@@ -60,16 +55,15 @@ public class RecetaController {
     @MutationMapping
     @PreAuthorize("hasRole('MEDICO')")
     public Receta emitirReceta(@Argument @Valid RecetaInput input) {
-        String uid = currentSupabaseUid();
-        Usuario u = usuarioRepository.findBySupabaseUid(uid).orElse(null);
-        if (u != null) {
-            // forzar medicoUid = supabase_uid del JWT, ignorar lo que envia el cliente
-            RecetaInput safe = new RecetaInput(
-                    input.pacienteId(), u.getNombre(), u.getSupabaseUid(),
-                    input.diagnostico(), input.detalles());
-            return recetaService.emitir(safe);
-        }
-        return recetaService.emitir(input);
+        JwtAuthenticationToken jwt = currentJwt();
+        // Forzar medicoUid/medicoNombre desde el JWT, ignorar lo que envie el cliente.
+        RecetaInput safe = new RecetaInput(
+                input.pacienteId(),
+                nombreFromJwt(jwt),
+                jwt.getToken().getSubject(),
+                input.diagnostico(),
+                input.detalles());
+        return recetaService.emitir(safe);
     }
 
     @QueryMapping
@@ -79,15 +73,28 @@ public class RecetaController {
     }
 
     /**
-     * Lee el subject del JWT actual directamente del SecurityContext.
-     * Evita la dependencia del ThreadLocal UsuarioContext que no se propaga
-     * entre el filter y los resolvers GraphQL.
+     * Lee el JWT actual directamente del SecurityContext (el ThreadLocal UsuarioContext
+     * no se propaga de forma fiable entre el filter y los resolvers GraphQL).
      */
-    private String currentSupabaseUid() {
+    private JwtAuthenticationToken currentJwt() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (!(auth instanceof JwtAuthenticationToken jwt)) {
             throw new AccessDeniedException("Usuario no autenticado");
         }
-        return jwt.getToken().getSubject();
+        return jwt;
+    }
+
+    private String currentSupabaseUid() {
+        return currentJwt().getToken().getSubject();
+    }
+
+    private String nombreFromJwt(JwtAuthenticationToken jwt) {
+        Object userMeta = jwt.getToken().getClaim("user_metadata");
+        if (userMeta instanceof Map<?, ?> meta) {
+            Object n = meta.get("name");
+            if (n != null) return n.toString();
+        }
+        String email = jwt.getToken().getClaim("email");
+        return email != null ? email : jwt.getToken().getSubject();
     }
 }

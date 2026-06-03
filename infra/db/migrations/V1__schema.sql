@@ -1,8 +1,15 @@
 -- ============================================================================
--- V1__schema.sql — Schema canonico de ms-gestion (Alimbert)
+-- V1__schema.sql — Schema canonico de ms-gestion (MS3, refactor microservicios)
 -- ============================================================================
--- Cubre: seguridad/usuarios, referencia minima de pacientes, inventario de
--- farmacia, recetas con enlace blockchain, facturacion.
+-- Dueño de: catalogo de farmacia, inventario, recetas (con anclaje blockchain)
+-- y facturacion.
+--
+-- CAMBIOS vs el monolito original (refactor a microservicios — Fase 1):
+--   - Ya NO existen las tablas rol, usuario, paciente -> viven en MS1 (ms-pacientes).
+--   - Las referencias cruzadas paciente_id / usuario_id son UUID SIN `REFERENCES`
+--     (se resuelven contra MS1 por HTTP; supabase_uid es la llave universal).
+--   - El rol del usuario ya NO se lee de la BD: viene en el JWT de Supabase
+--     (claim app_metadata.role). Cada resolver usa @PreAuthorize.
 -- ============================================================================
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;  -- gen_random_uuid()
@@ -17,58 +24,6 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
--- ===========================================================================
--- SEGURIDAD / USUARIOS
--- ===========================================================================
-
-CREATE TABLE rol (
-    id          SERIAL PRIMARY KEY,
-    nombre      VARCHAR(40)  UNIQUE NOT NULL,
-    descripcion VARCHAR(200)
-);
-
-CREATE TABLE usuario (
-    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    supabase_uid VARCHAR(100) UNIQUE NOT NULL,
-    nombre       VARCHAR(150) NOT NULL,
-    email        VARCHAR(150) UNIQUE NOT NULL,
-    rol_id       INTEGER      NOT NULL REFERENCES rol(id),
-    activo       BOOLEAN      NOT NULL DEFAULT TRUE,
-    created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_usuario_supabase_uid ON usuario(supabase_uid);
-CREATE INDEX idx_usuario_rol          ON usuario(rol_id);
-
-CREATE TRIGGER trg_usuario_updated_at
-    BEFORE UPDATE ON usuario
-    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-
--- ===========================================================================
--- PACIENTE (referencia minima -- Javier sera dueno canonico)
--- ===========================================================================
-
-CREATE TABLE paciente (
-    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    supabase_uid     VARCHAR(100) UNIQUE,
-    ci               VARCHAR(20)  UNIQUE NOT NULL,
-    nombre           VARCHAR(100) NOT NULL,
-    apellido         VARCHAR(100) NOT NULL,
-    telefono         VARCHAR(30),
-    email            VARCHAR(150),
-    fecha_nacimiento DATE,
-    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_paciente_ci           ON paciente(ci);
-CREATE INDEX idx_paciente_supabase_uid ON paciente(supabase_uid);
-
-CREATE TRIGGER trg_paciente_updated_at
-    BEFORE UPDATE ON paciente
-    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ===========================================================================
 -- INVENTARIO DE FARMACIA
@@ -146,7 +101,7 @@ CREATE TABLE movimiento_inventario (
     tipo       tipo_movimiento_enum NOT NULL,
     cantidad   INTEGER NOT NULL,
     motivo     VARCHAR(250),
-    usuario_id UUID REFERENCES usuario(id),
+    usuario_id UUID,                 -- REFERENCIA a usuario en MS1 (sin FK)
     fecha      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -161,7 +116,7 @@ CREATE TYPE estado_receta_enum AS ENUM ('EMITIDA', 'DISPENSADA', 'ANULADA');
 
 CREATE TABLE receta (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    paciente_id     UUID NOT NULL REFERENCES paciente(id),
+    paciente_id     UUID NOT NULL,           -- REFERENCIA a paciente en MS1 (sin FK)
     medico_nombre   VARCHAR(150) NOT NULL,
     medico_uid      VARCHAR(100) NOT NULL,   -- supabase_uid del medico
     diagnostico     TEXT,
@@ -205,8 +160,8 @@ CREATE TYPE estado_factura_enum AS ENUM ('PENDIENTE', 'PAGADA', 'ANULADA');
 CREATE TABLE factura (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     numero       VARCHAR(30) UNIQUE NOT NULL,
-    paciente_id  UUID REFERENCES paciente(id),
-    usuario_id   UUID NOT NULL REFERENCES usuario(id),   -- cajero
+    paciente_id  UUID,                       -- REFERENCIA a paciente en MS1 (sin FK)
+    usuario_id   UUID NOT NULL,              -- REFERENCIA a usuario (cajero) en MS1 (sin FK)
     fecha        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     subtotal     NUMERIC(12,2) NOT NULL CHECK (subtotal >= 0),
     descuento    NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (descuento >= 0),

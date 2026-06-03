@@ -2,7 +2,6 @@ package com.clinica.gestion.config;
 
 import com.clinica.gestion.security.SupabaseJwtConverter;
 import com.clinica.gestion.security.UsuarioContextFilter;
-import com.clinica.gestion.usuario.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -25,11 +24,10 @@ public class SecurityConfig {
     private String jwksUri;
 
     private final SupabaseJwtConverter jwtConverter;
-    private final UsuarioService usuarioService;
 
     @Bean
     public UsuarioContextFilter usuarioContextFilter() {
-        return new UsuarioContextFilter(usuarioService);
+        return new UsuarioContextFilter();
     }
 
     @Bean

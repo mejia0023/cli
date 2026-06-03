@@ -1,6 +1,5 @@
 package com.clinica.gestion.receta;
 
-import com.clinica.gestion.paciente.Paciente;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -24,9 +23,9 @@ public class Receta {
     @GeneratedValue
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "paciente_id", nullable = false)
-    private Paciente paciente;
+    // Referencia a paciente en MS1 (sin FK). El dueño canonico del paciente es MS1.
+    @Column(name = "paciente_id", nullable = false)
+    private UUID pacienteId;
 
     @Column(name = "medico_nombre", nullable = false, length = 150)
     private String medicoNombre;

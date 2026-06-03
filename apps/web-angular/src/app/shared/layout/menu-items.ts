@@ -14,7 +14,14 @@ export const MENU: MenuItem[] = [
   { label: 'Administración', icon: 'pi-cog',           route: '/administracion',roles: ['ADMINISTRADOR'] },
   { label: 'Dashboard BI',   icon: 'pi-chart-bar',     route: '/dashboard',     roles: ['ADMINISTRADOR'] },
   { label: 'Mis recetas',    icon: 'pi-file-edit',     route: '/mis-recetas',   roles: ['MEDICO', 'PACIENTE'] },
-  { label: 'Mis facturas',   icon: 'pi-receipt',       route: '/mis-facturas',  roles: ['PACIENTE'] }
+  { label: 'Mis facturas',   icon: 'pi-receipt',       route: '/mis-facturas',  roles: ['PACIENTE'] },
+  // Nuevos (MS1 vía Gateway)
+  { label: 'Citas',            icon: 'pi-calendar',  route: '/citas',       roles: ['ADMINISTRADOR', 'MEDICO', 'PACIENTE'] },
+  { label: 'Historia clínica', icon: 'pi-clipboard', route: '/historia',    roles: ['ADMINISTRADOR', 'MEDICO'] },
+  // Nuevos (MS2 REST)
+  { label: 'Diagnóstico IA',   icon: 'pi-bolt',      route: '/diagnostico', roles: ['ADMINISTRADOR', 'MEDICO'] },
+  { label: 'Documentos',       icon: 'pi-folder',    route: '/documentos',  roles: ['ADMINISTRADOR', 'MEDICO', 'PACIENTE'] },
+  { label: 'Pre-triaje',       icon: 'pi-upload',    route: '/pre-triaje',  roles: ['PACIENTE'] }
 ];
 
 export function homePorRol(rol: RolUsuario): string {

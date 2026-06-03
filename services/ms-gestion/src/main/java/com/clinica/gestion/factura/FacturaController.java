@@ -1,7 +1,6 @@
 package com.clinica.gestion.factura;
 
-import com.clinica.gestion.paciente.Paciente;
-import com.clinica.gestion.paciente.PacienteRepository;
+import com.clinica.gestion.common.client.PacienteClient;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -23,7 +22,7 @@ import java.util.UUID;
 public class FacturaController {
 
     private final FacturaService facturaService;
-    private final PacienteRepository pacienteRepository;
+    private final PacienteClient pacienteClient;
 
     @QueryMapping
     @PreAuthorize("hasAnyRole('ADMINISTRADOR','FARMACEUTICO')")
@@ -45,8 +44,7 @@ public class FacturaController {
             throw new AccessDeniedException("Usuario no autenticado");
         }
         String uid = jwt.getToken().getSubject();
-        return pacienteRepository.findBySupabaseUid(uid)
-                .map(Paciente::getId)
+        return pacienteClient.pacienteIdPorSupabaseUid(uid)
                 .map(facturaService::listarPorPaciente)
                 .orElse(Collections.emptyList());
     }
