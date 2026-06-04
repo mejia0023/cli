@@ -66,9 +66,16 @@ export const CREATE_FACTURA = gql`
 export const LIST_FACTURAS = gql`
   query Facturas {
     facturas {
-      id numero fecha total metodoPago estado
-      paciente { id nombre apellido }
+      id numero fecha subtotal descuento total metodoPago estado
+      paciente { id nombre apellido ci }
+      detalles { id cantidad precioUnitario subtotal medicamento { nombre } }
     }
+  }
+`;
+
+export const ANULAR_FACTURA = gql`
+  mutation AnularFactura($id: UUID!, $motivo: String) {
+    anularFactura(id: $id, motivo: $motivo) { id estado }
   }
 `;
 

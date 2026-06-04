@@ -10,6 +10,7 @@ export interface MenuItem {
 export const MENU: MenuItem[] = [
   { label: 'Recepción',      icon: 'pi-users',         route: '/recepcion',     roles: ['ADMINISTRADOR', 'FARMACEUTICO'] },
   { label: 'Caja',           icon: 'pi-shopping-cart', route: '/caja',          roles: ['ADMINISTRADOR', 'FARMACEUTICO'] },
+  { label: 'Facturas',       icon: 'pi-receipt',       route: '/facturas',      roles: ['ADMINISTRADOR', 'FARMACEUTICO'] },
   { label: 'Inventario',     icon: 'pi-box',           route: '/inventario',    roles: ['ADMINISTRADOR', 'FARMACEUTICO'] },
   { label: 'Administración', icon: 'pi-cog',           route: '/administracion',roles: ['ADMINISTRADOR'] },
   { label: 'Dashboard BI',   icon: 'pi-chart-bar',     route: '/dashboard',     roles: ['ADMINISTRADOR'] },

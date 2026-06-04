@@ -34,6 +34,12 @@ export const APP_ROUTES: Routes = [
         loadComponent: () => import('./features/caja/caja.component').then(m => m.CajaComponent)
       },
       {
+        path: 'facturas',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMINISTRADOR', 'FARMACEUTICO'] },
+        loadComponent: () => import('./features/facturas/facturas.component').then(m => m.FacturasComponent)
+      },
+      {
         path: 'inventario',
         canActivate: [roleGuard],
         data: { roles: ['ADMINISTRADOR', 'FARMACEUTICO'] },
