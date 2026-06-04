@@ -198,7 +198,7 @@ export const BI_RECETAS_BLOCKCHAIN = gql`
 // === Citas (MS1, vía Gateway) ===
 export const MIS_CITAS = gql`
   query MisCitas {
-    misCitas { id especialidad fechaHora urgencia estado motivo medicoUid }
+    misCitas { id especialidad fechaHora urgencia estado motivo medicoUid medico { nombre } }
   }
 `;
 
@@ -206,6 +206,7 @@ export const CITAS = gql`
   query Citas {
     citas {
       id especialidad fechaHora urgencia estado motivo medicoUid
+      medico { nombre }
       paciente { id nombre apellido ci }
     }
   }
@@ -214,6 +215,12 @@ export const CITAS = gql`
 export const CREAR_CITA = gql`
   mutation CrearCita($input: CitaInput!) {
     crearCita(input: $input) { id especialidad fechaHora urgencia estado motivo }
+  }
+`;
+
+export const CANCELAR_CITA = gql`
+  mutation CancelarCita($id: ID!) {
+    cancelarCita(id: $id) { id estado }
   }
 `;
 

@@ -35,6 +35,33 @@ async function pacienteDelActor(ctx: Ctx, a: Actor) {
   });
 }
 
+/**
+ * Asignacion automatica de medico: devuelve el supabaseUid del usuario con rol
+ * MEDICO que tenga MENOS citas AGENDADAS (reparto equitativo de carga).
+ * Si todavia no existe ningun medico en la tabla usuario, devuelve '' y la
+ * cita queda en el pool comun (comportamiento anterior, sin romper nada).
+ */
+async function medicoMenosCargado(ctx: Ctx): Promise<string> {
+  const medicos = await ctx.prisma.usuario.findMany({
+    where: { rol: { nombre: 'MEDICO' } },
+    select: { supabaseUid: true },
+  });
+  if (medicos.length === 0) return '';
+  const carga = await ctx.prisma.cita.groupBy({
+    by: ['medicoUid'],
+    where: { estado: 'AGENDADA', medicoUid: { in: medicos.map((m) => m.supabaseUid) } },
+    _count: { _all: true },
+  });
+  const porUid = new Map(carga.map((c) => [c.medicoUid, c._count._all]));
+  let elegido = medicos[0].supabaseUid;
+  let min = porUid.get(elegido) ?? 0;
+  for (const m of medicos) {
+    const n = porUid.get(m.supabaseUid) ?? 0;
+    if (n < min) { min = n; elegido = m.supabaseUid; }
+  }
+  return elegido;
+}
+
 const DateTime = new GraphQLScalarType({
   name: 'DateTime',
   description: 'Fecha-hora ISO-8601',
@@ -133,10 +160,16 @@ export const resolvers = {
           throw new GraphQLError('Solo puedes agendar tus propias citas', { extensions: { code: 'FORBIDDEN' } });
         }
       }
+      const fecha = new Date(i.fechaHora);
+      if (!(fecha.getTime() > Date.now())) {
+        throw new GraphQLError('La fecha de la cita debe ser futura', { extensions: { code: 'BAD_USER_INPUT' } });
+      }
+      // Asignacion automatica: si nadie indico medico, se elige el menos cargado.
+      const medicoUid = i.medicoUid || (await medicoMenosCargado(ctx));
       return ctx.prisma.cita.create({
         data: {
           pacienteId: i.pacienteId,
-          medicoUid: i.medicoUid ?? '',
+          medicoUid,
           especialidad: i.especialidad ?? null,
           fechaHora: i.fechaHora,
           urgencia: i.urgencia ?? null,
@@ -145,11 +178,27 @@ export const resolvers = {
       });
     },
 
-    crearEpisodio(_p: unknown, args: { input: EpisodioData }, ctx: Ctx) {
+    async cancelarCita(_p: unknown, args: { id: string }, ctx: Ctx) {
+      const a = requireRole(ctx, 'ADMINISTRADOR', 'MEDICO', 'PACIENTE');
+      const cita = await ctx.prisma.cita.findUnique({ where: { id: args.id } });
+      if (!cita) throw new GraphQLError('Cita no encontrada', { extensions: { code: 'NOT_FOUND' } });
+      if (cita.estado !== 'AGENDADA') {
+        throw new GraphQLError('Solo se puede cancelar una cita AGENDADA', { extensions: { code: 'BAD_USER_INPUT' } });
+      }
+      if (a.rol === 'PACIENTE') {
+        const pac = await pacienteDelActor(ctx, a);
+        if (!pac || pac.id !== cita.pacienteId) {
+          throw new GraphQLError('Solo puedes cancelar tus propias citas', { extensions: { code: 'FORBIDDEN' } });
+        }
+      }
+      return ctx.prisma.cita.update({ where: { id: args.id }, data: { estado: 'CANCELADA' } });
+    },
+
+    async crearEpisodio(_p: unknown, args: { input: EpisodioData }, ctx: Ctx) {
       const a = requireRole(ctx, 'ADMINISTRADOR', 'MEDICO');
       const i = args.input;
       // Episodio inmutable: solo se crea, nunca se edita ni borra.
-      return ctx.prisma.episodio.create({
+      const episodio = await ctx.prisma.episodio.create({
         data: {
           historiaId: i.historiaId,
           citaId: i.citaId ?? null,
@@ -159,6 +208,18 @@ export const resolvers = {
           diagnosticoTexto: i.diagnosticoTexto ?? null,
         },
       });
+      // Cierra el ciclo de vida: la cita atendida pasa a ATENDIDA y, si seguia
+      // sin medico, queda a nombre del medico que la atendio.
+      if (i.citaId) {
+        const citaPrev = await ctx.prisma.cita.findUnique({ where: { id: i.citaId } });
+        if (citaPrev) {
+          await ctx.prisma.cita.update({
+            where: { id: i.citaId },
+            data: { estado: 'ATENDIDA', medicoUid: citaPrev.medicoUid || a.uid },
+          });
+        }
+      }
+      return episodio;
     },
 
     async cambiarRolUsuario(_p: unknown, args: { id: string; rol: Rol }, ctx: Ctx) {
@@ -187,6 +248,10 @@ export const resolvers = {
   Cita: {
     paciente(parent: { pacienteId: string }, _a: unknown, ctx: Ctx) {
       return ctx.prisma.paciente.findUnique({ where: { id: parent.pacienteId } });
+    },
+    medico(parent: { medicoUid: string }, _a: unknown, ctx: Ctx) {
+      if (!parent.medicoUid) return null;
+      return ctx.prisma.usuario.findUnique({ where: { supabaseUid: parent.medicoUid } });
     },
   },
 

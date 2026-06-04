@@ -4,7 +4,7 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Apollo } from 'apollo-angular';
 import { take } from 'rxjs';
-import { MIS_CITAS, CITAS, CREAR_CITA, LIST_PACIENTES } from '../../core/graphql/queries';
+import { MIS_CITAS, CITAS, CREAR_CITA, CANCELAR_CITA, LIST_PACIENTES } from '../../core/graphql/queries';
 import { SupabaseService } from '../../core/auth/supabase.service';
 
 @Component({
@@ -57,7 +57,11 @@ import { SupabaseService } from '../../core/auth/supabase.service';
             <span class="meta">{{ c.fechaHora | date:'short' }}</span>
             <span *ngIf="c.urgencia" class="badge" [class.badge-red]="c.urgencia==='ALTA'" [class.badge-amber]="c.urgencia==='MEDIA'">{{ c.urgencia }}</span>
             <span class="badge">{{ c.estado }}</span>
+            <span class="meta">{{ c.medico?.nombre ? 'Dr(a). ' + c.medico.nombre : 'Sin médico asignado' }}</span>
           </div>
+          <button *ngIf="c.estado === 'AGENDADA'" class="btn-secondary" (click)="cancelar(c)" [disabled]="cancelando === c.id">
+            {{ cancelando === c.id ? 'Cancelando…' : 'Cancelar' }}
+          </button>
         </div>
         <p *ngIf="c.motivo" class="meta">{{ c.motivo }}</p>
       </div>
@@ -91,6 +95,7 @@ export class CitasComponent implements OnInit {
   showForm = false;
   guardando = false;
   error = '';
+  cancelando: string | null = null;
   form = { pacienteId: null as string | null, especialidad: '', fechaHora: '', urgencia: '', motivo: '' };
 
   ngOnInit() {
@@ -134,6 +139,15 @@ export class CitasComponent implements OnInit {
         this.cargar();
       },
       error: e => { this.guardando = false; this.error = e?.graphQLErrors?.[0]?.message || e.message; }
+    });
+  }
+
+  cancelar(c: any) {
+    if (!confirm('¿Cancelar esta cita?')) return;
+    this.cancelando = c.id;
+    this.apollo.mutate<any>({ mutation: CANCELAR_CITA, variables: { id: c.id } }).subscribe({
+      next: () => { this.cancelando = null; this.cargar(); },
+      error: e => { this.cancelando = null; alert(e?.graphQLErrors?.[0]?.message || e.message); }
     });
   }
 }

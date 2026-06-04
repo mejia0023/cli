@@ -37,6 +37,7 @@ export const typeDefs = /* GraphQL */ `
     id: ID!
     pacienteId: ID!
     paciente: Paciente
+    medico: Usuario
     medicoUid: String!
     especialidad: String
     fechaHora: DateTime!
@@ -107,6 +108,7 @@ export const typeDefs = /* GraphQL */ `
     crearPaciente(input: PacienteInput!): Paciente!
     actualizarPaciente(id: ID!, input: PacienteInput!): Paciente!
     crearCita(input: CitaInput!): Cita!
+    cancelarCita(id: ID!): Cita!
     crearEpisodio(input: EpisodioInput!): Episodio!
     cambiarRolUsuario(id: ID!, rol: RolNombre!): Usuario!
   }
