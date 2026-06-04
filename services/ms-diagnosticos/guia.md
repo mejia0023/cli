@@ -1,0 +1,2 @@
+powershellcurl http://localhost:8000/api/health
+La meta: "storage":"s3","repo":"dynamodb","aws":true. Cuando lo veas, haces la prueba de oro — subir un documento desde la pantalla Documentos y verlo aparecer en tu bucket S3 y en la tabla documento de la consola. Pásame la salida del script o del health, lo que llegue primero.
