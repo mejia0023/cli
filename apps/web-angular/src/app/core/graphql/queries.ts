@@ -68,7 +68,7 @@ export const LIST_FACTURAS = gql`
     facturas {
       id numero fecha subtotal descuento total metodoPago estado
       paciente { id nombre apellido ci }
-      detalles { id cantidad precioUnitario subtotal medicamento { nombre } }
+      detalles { id cantidad precioUnitario subtotal medicamento { id nombre } }
     }
   }
 `;
