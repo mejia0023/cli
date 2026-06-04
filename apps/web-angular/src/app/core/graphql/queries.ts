@@ -139,25 +139,25 @@ export const MI_PACIENTE = gql`
 `;
 
 export const CAMBIAR_ROL_USUARIO = gql`
-  mutation CambiarRolUsuario($id: UUID!, $rol: RolEnum!) {
+  mutation CambiarRolUsuario($id: ID!, $rol: RolNombre!) {
     cambiarRolUsuario(id: $id, rol: $rol) { id rol }
   }
 `;
 
 export const DESACTIVAR_USUARIO = gql`
-  mutation DesactivarUsuario($id: UUID!) {
+  mutation DesactivarUsuario($id: ID!) {
     desactivarUsuario(id: $id) { id activo }
   }
 `;
 
 export const ACTIVAR_USUARIO = gql`
-  mutation ActivarUsuario($id: UUID!) {
+  mutation ActivarUsuario($id: ID!) {
     activarUsuario(id: $id) { id activo }
   }
 `;
 
 export const ACTUALIZAR_USUARIO = gql`
-  mutation ActualizarUsuario($id: UUID!, $nombre: String, $email: String) {
+  mutation ActualizarUsuario($id: ID!, $nombre: String, $email: String) {
     actualizarUsuario(id: $id, nombre: $nombre, email: $email) { id nombre email }
   }
 `;

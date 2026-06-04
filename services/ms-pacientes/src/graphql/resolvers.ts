@@ -228,11 +228,38 @@ export const resolvers = {
       if (!rol) throw new GraphQLError('Rol invalido', { extensions: { code: 'BAD_USER_INPUT' } });
       return ctx.prisma.usuario.update({ where: { id: args.id }, data: { rolId: rol.id } });
     },
+
+    async actualizarUsuario(_p: unknown, args: { id: string; nombre?: string | null; email?: string | null }, ctx: Ctx) {
+      requireRole(ctx, 'ADMINISTRADOR');
+      const data: { nombre?: string; email?: string } = {};
+      if (args.nombre != null && args.nombre.trim()) data.nombre = args.nombre.trim();
+      if (args.email != null && args.email.trim()) data.email = args.email.trim().toLowerCase();
+      if (Object.keys(data).length === 0) {
+        throw new GraphQLError('Nada que actualizar', { extensions: { code: 'BAD_USER_INPUT' } });
+      }
+      return ctx.prisma.usuario.update({ where: { id: args.id }, data });
+    },
+
+    async desactivarUsuario(_p: unknown, args: { id: string }, ctx: Ctx) {
+      const a = requireRole(ctx, 'ADMINISTRADOR');
+      const u = await ctx.prisma.usuario.findUnique({ where: { id: args.id } });
+      if (!u) throw new GraphQLError('Usuario no encontrado', { extensions: { code: 'NOT_FOUND' } });
+      if (u.supabaseUid === a.uid) {
+        throw new GraphQLError('No puedes desactivar tu propia cuenta', { extensions: { code: 'FORBIDDEN' } });
+      }
+      return ctx.prisma.usuario.update({ where: { id: args.id }, data: { activo: false } });
+    },
+
+    activarUsuario(_p: unknown, args: { id: string }, ctx: Ctx) {
+      requireRole(ctx, 'ADMINISTRADOR');
+      return ctx.prisma.usuario.update({ where: { id: args.id }, data: { activo: true } });
+    },
   },
 
   Usuario: {
-    rol(parent: { rolId: number; rol?: unknown }, _a: unknown, ctx: Ctx) {
-      return parent.rol ?? ctx.prisma.rol.findUnique({ where: { id: parent.rolId } });
+    async rol(parent: { rolId: number; rol?: { nombre?: string } | null }, _a: unknown, ctx: Ctx) {
+      const r = parent.rol ?? (await ctx.prisma.rol.findUnique({ where: { id: parent.rolId } }));
+      return (r as { nombre?: string } | null)?.nombre ?? null;
     },
   },
 

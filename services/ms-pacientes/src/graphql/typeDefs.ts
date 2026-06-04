@@ -16,7 +16,7 @@ export const typeDefs = /* GraphQL */ `
     supabaseUid: String!
     nombre: String!
     email: String!
-    rol: Rol!
+    rol: RolNombre!
     activo: Boolean!
   }
 
@@ -111,5 +111,8 @@ export const typeDefs = /* GraphQL */ `
     cancelarCita(id: ID!): Cita!
     crearEpisodio(input: EpisodioInput!): Episodio!
     cambiarRolUsuario(id: ID!, rol: RolNombre!): Usuario!
+    actualizarUsuario(id: ID!, nombre: String, email: String): Usuario!
+    desactivarUsuario(id: ID!): Usuario!
+    activarUsuario(id: ID!): Usuario!
   }
 `;
