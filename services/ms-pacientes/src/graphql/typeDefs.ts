@@ -114,5 +114,6 @@ export const typeDefs = /* GraphQL */ `
     actualizarUsuario(id: ID!, nombre: String, email: String): Usuario!
     desactivarUsuario(id: ID!): Usuario!
     activarUsuario(id: ID!): Usuario!
+    crearUsuario(nombre: String!, email: String!, password: String!, rol: RolNombre!): Usuario!
   }
 `;

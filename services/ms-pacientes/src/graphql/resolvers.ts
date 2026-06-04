@@ -254,6 +254,70 @@ export const resolvers = {
       requireRole(ctx, 'ADMINISTRADOR');
       return ctx.prisma.usuario.update({ where: { id: args.id }, data: { activo: true } });
     },
+
+    async crearUsuario(
+      _p: unknown,
+      args: { nombre: string; email: string; password: string; rol: Rol },
+      ctx: Ctx,
+    ) {
+      requireRole(ctx, 'ADMINISTRADOR');
+      const nombre = args.nombre?.trim();
+      const email = args.email?.trim().toLowerCase();
+      if (!nombre || !email || !args.password || args.password.length < 6) {
+        throw new GraphQLError('Nombre, email y password (minimo 6 caracteres) son obligatorios', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
+      const rolRow = await ctx.prisma.rol.findUnique({ where: { nombre: args.rol } });
+      if (!rolRow) throw new GraphQLError('Rol invalido', { extensions: { code: 'BAD_USER_INPUT' } });
+      const dup = await ctx.prisma.usuario.findFirst({
+        where: { email: { equals: email, mode: 'insensitive' } },
+      });
+      if (dup) {
+        throw new GraphQLError('Ya existe un usuario con ese email', { extensions: { code: 'BAD_USER_INPUT' } });
+      }
+
+      // 1) Crear la cuenta REAL de login en Supabase Auth (Admin API, service role).
+      //    El rol viaja en app_metadata.role, que es lo que lee actorFromRequest.
+      const issuer = process.env.SUPABASE_ISSUER ?? '';
+      const base = (process.env.SUPABASE_URL ?? issuer.replace(/\/auth\/v1\/?$/, '')).replace(/\/$/, '');
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!base || !serviceKey) {
+        throw new GraphQLError(
+          'Falta configurar SUPABASE_SERVICE_ROLE_KEY (y SUPABASE_URL o SUPABASE_ISSUER) en el .env de ms-pacientes',
+          { extensions: { code: 'INTERNAL_SERVER_ERROR' } },
+        );
+      }
+      const resp = await fetch(`${base}/auth/v1/admin/users`, {
+        method: 'POST',
+        headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password: args.password,
+          email_confirm: true,
+          app_metadata: { role: args.rol },
+          user_metadata: { name: nombre },
+        }),
+      });
+      const body: any = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new GraphQLError(
+          `Supabase rechazo la creacion (${resp.status}): ${body?.msg ?? body?.message ?? JSON.stringify(body)}`,
+          { extensions: { code: 'BAD_USER_INPUT', supabase: body } },
+        );
+      }
+      const uid = body?.id;
+      if (!uid) {
+        throw new GraphQLError('Supabase no devolvio el id del usuario creado', {
+          extensions: { code: 'INTERNAL_SERVER_ERROR' },
+        });
+      }
+
+      // 2) Fila local con el uid REAL: el lazy-provisioning de me() la respetara tal cual.
+      return ctx.prisma.usuario.create({
+        data: { supabaseUid: uid, nombre, email, rolId: rolRow.id, activo: true },
+      });
+    },
   },
 
   Usuario: {

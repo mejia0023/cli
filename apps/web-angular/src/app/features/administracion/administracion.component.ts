@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Apollo } from 'apollo-angular';
 import {
   LIST_USUARIOS, LIST_PROVEEDORES, LIST_CATEGORIAS, ME,
-  CAMBIAR_ROL_USUARIO, DESACTIVAR_USUARIO, ACTIVAR_USUARIO, ACTUALIZAR_USUARIO
+  CAMBIAR_ROL_USUARIO, DESACTIVAR_USUARIO, ACTIVAR_USUARIO, ACTUALIZAR_USUARIO,
+  CREAR_USUARIO
 } from '../../core/graphql/queries';
 
 type Rol = 'ADMINISTRADOR' | 'MEDICO' | 'FARMACEUTICO' | 'PACIENTE';
@@ -20,7 +21,8 @@ interface UsuarioRow { id: string; nombre: string; email: string; rol: Rol; acti
     <div class="card">
       <div class="card-header">
         <h3>Usuarios</h3>
-        <span class="hint">CRUD soft — los usuarios nacen al primer login (lazy provisioning).</span>
+        <span class="hint">CRUD soft — los usuarios nacen al primer login (lazy provisioning) o se crean aquí.</span>
+        <button class="btn-primary" type="button" style="margin-left:auto;" (click)="openCrear()">+ Nuevo usuario</button>
       </div>
       <table class="data-table">
         <thead>
@@ -106,6 +108,49 @@ interface UsuarioRow { id: string; nombre: string; email: string; rol: Rol; acti
             <button type="button" class="btn-secondary" (click)="cancelEdit()">Cancelar</button>
             <button type="submit" class="btn-primary" [disabled]="savingEdit">
               {{ savingEdit ? 'Guardando…' : 'Guardar' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal crear usuario -->
+    <div class="modal-backdrop" *ngIf="creating" (click)="cancelCrear()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Nuevo usuario</h3>
+          <button class="btn-close" (click)="cancelCrear()" aria-label="Cerrar">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+        <form class="form-grid" (ngSubmit)="saveCrear()">
+          <label>
+            <span>Nombre</span>
+            <input type="text" [(ngModel)]="createForm.nombre" name="cNombre"
+                   required maxlength="150" autocomplete="off">
+          </label>
+          <label>
+            <span>Email</span>
+            <input type="email" [(ngModel)]="createForm.email" name="cEmail"
+                   required maxlength="150" autocomplete="off">
+          </label>
+          <label>
+            <span>Contraseña temporal</span>
+            <input type="password" [(ngModel)]="createForm.password" name="cPassword"
+                   required minlength="6" autocomplete="new-password">
+            <small class="hint-warn">Mínimo 6 caracteres. La cuenta de login se crea en Supabase con el rol elegido.</small>
+          </label>
+          <label>
+            <span>Rol</span>
+            <select [(ngModel)]="createForm.rol" name="cRol" class="rol-select">
+              <option *ngFor="let r of ROLES" [value]="r">{{ r }}</option>
+            </select>
+          </label>
+          <div *ngIf="createErrorMsg" class="error-banner">{{ createErrorMsg }}</div>
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" (click)="cancelCrear()">Cancelar</button>
+            <button type="submit" class="btn-primary" [disabled]="savingCreate">
+              {{ savingCreate ? 'Creando…' : 'Crear usuario' }}
             </button>
           </div>
         </form>
@@ -285,6 +330,12 @@ export class AdministracionComponent implements OnInit {
   savingEdit = false;
   editErrorMsg = '';
 
+  creating = false;
+  createForm: { nombre: string; email: string; password: string; rol: Rol } =
+    { nombre: '', email: '', password: '', rol: 'MEDICO' };
+  savingCreate = false;
+  createErrorMsg = '';
+
   ngOnInit() {
     this.apollo.query<any>({ query: ME, fetchPolicy: 'network-only' })
       .subscribe({ next: r => this.miId = r.data?.me?.id ?? null });
@@ -333,6 +384,36 @@ export class AdministracionComponent implements OnInit {
   }
 
   trackId(_: number, u: UsuarioRow) { return u.id; }
+
+  openCrear() {
+    this.creating = true;
+    this.createForm = { nombre: '', email: '', password: '', rol: 'MEDICO' };
+    this.createErrorMsg = '';
+  }
+
+  cancelCrear() {
+    this.creating = false;
+    this.savingCreate = false;
+    this.createErrorMsg = '';
+  }
+
+  saveCrear() {
+    const nombre = this.createForm.nombre?.trim();
+    const email = this.createForm.email?.trim().toLowerCase();
+    const password = this.createForm.password ?? '';
+    if (!nombre || !email || password.length < 6) {
+      this.createErrorMsg = 'Nombre, email y contraseña (mínimo 6 caracteres) son obligatorios';
+      return;
+    }
+    this.savingCreate = true;
+    this.apollo.mutate<any>({
+      mutation: CREAR_USUARIO,
+      variables: { nombre, email, password, rol: this.createForm.rol }
+    }).subscribe({
+      next: () => { this.savingCreate = false; this.creating = false; this.fetchUsuarios(); },
+      error: e => { this.savingCreate = false; this.createErrorMsg = this.parseError(e); }
+    });
+  }
 
   openEditar(u: UsuarioRow) {
     this.editing = u;

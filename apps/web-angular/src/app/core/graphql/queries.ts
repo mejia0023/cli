@@ -133,6 +133,14 @@ export const LIST_USUARIOS = gql`
   }
 `;
 
+export const CREAR_USUARIO = gql`
+  mutation CrearUsuario($nombre: String!, $email: String!, $password: String!, $rol: RolNombre!) {
+    crearUsuario(nombre: $nombre, email: $email, password: $password, rol: $rol) {
+      id nombre email rol activo
+    }
+  }
+`;
+
 export const ME = gql`
   query Me {
     me { id nombre email rol }
