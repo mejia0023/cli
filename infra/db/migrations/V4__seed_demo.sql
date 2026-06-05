@@ -7,7 +7,7 @@
 -- "de referencia" sin FK; el dueño canonico de esos registros es MS1.
 --   cajero farma  = 33333333-3333-3333-3333-333333333333
 --   cajero admin  = 11111111-1111-1111-1111-111111111111
---   pacientes     = aaaa1111.. / aaaa2222.. / aaaa3333.. (y mas en V5)
+--   pacientes     = aaaa1111.. (Carlos) / aaaa2222.. (Paco)  [coherente con Supabase]
 -- ============================================================================
 
 -- Proveedores demo
