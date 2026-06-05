@@ -46,15 +46,18 @@ model Rol {
 }
 
 model Usuario {
-  id          String   @id @default(uuid()) @db.Uuid
-  supabaseUid String   @unique @map("supabase_uid")
-  nombre      String
-  email       String   @unique
-  rolId       Int      @map("rol_id")
-  rol         Rol      @relation(fields: [rolId], references: [id])
-  activo      Boolean  @default(true)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(uuid()) @db.Uuid
+  supabaseUid   String   @unique @map("supabase_uid")
+  nombre        String
+  email         String   @unique
+  rolId         Int      @map("rol_id")
+  rol           Rol      @relation(fields: [rolId], references: [id])
+  activo        Boolean  @default(true)
+  // Token de notificaciones push de Expo del dispositivo del usuario
+  // (ExponentPushToken[...] / ExpoPushToken[...]). Null si no registro la app.
+  expoPushToken String?  @map("expo_push_token")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@index([rolId])
   @@map("usuario")

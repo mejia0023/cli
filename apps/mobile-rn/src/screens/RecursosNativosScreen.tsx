@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
+import { registrarPushToken } from '../lib/registerPush';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -149,27 +149,22 @@ function BiometriaSection() {
 // ============== 4) NOTIFICACIONES PUSH ==============
 function PushSection() {
   const [token, setToken] = useState<string | null>(null);
+  const [estado, setEstado] = useState<string | null>(null);
+  const [registrando, setRegistrando] = useState(false);
 
   async function registrar() {
-    if (!Device.isDevice) {
-      Alert.alert('Solo en dispositivo real', 'Las notificaciones push no funcionan en simulador.');
-      return;
-    }
-    const { status: existing } = await Notifications.getPermissionsAsync();
-    let finalStatus = existing;
-    if (existing !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    if (finalStatus !== 'granted') {
-      Alert.alert('Permiso denegado', 'No puedo enviar notificaciones sin permiso.');
-      return;
-    }
+    setRegistrando(true);
+    setEstado(null);
     try {
-      const t = await Notifications.getExpoPushTokenAsync();
-      setToken(t.data);
-    } catch (e: any) {
-      Alert.alert('Error', e.message);
+      const res = await registrarPushToken();
+      if (res.token) setToken(res.token);
+      if (res.ok) {
+        setEstado('Token registrado ✅');
+      } else {
+        setEstado(`⚠️ ${res.error ?? 'No se pudo registrar'}`);
+      }
+    } finally {
+      setRegistrando(false);
     }
   }
 
@@ -189,9 +184,15 @@ function PushSection() {
       <Text style={styles.cardTitle}>🔔 Notificaciones push</Text>
       <Text style={styles.cardDesc}>Alertas de recetas controladas, stock critico, citas, etc.</Text>
 
-      <TouchableOpacity onPress={registrar} style={styles.btn}>
-        <Text style={styles.btnText}>Registrar para push</Text>
+      <TouchableOpacity onPress={registrar} disabled={registrando} style={styles.btn}>
+        <Text style={styles.btnText}>{registrando ? 'Registrando...' : 'Registrar para push'}</Text>
       </TouchableOpacity>
+
+      {estado && (
+        <View style={styles.result}>
+          <Text style={styles.resultText}>{estado}</Text>
+        </View>
+      )}
 
       {token && (
         <View style={styles.result}>

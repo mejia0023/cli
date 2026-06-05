@@ -15,6 +15,7 @@ from . import repo as repo_mod
 from . import storage as storage_mod
 from .ml import models as ml_models
 from .ml import triage as ml_triage
+from .notify import notificar_resultado
 from .permissions import role_required
 
 repo = repo_mod.get_repo()
@@ -104,6 +105,14 @@ def diagnosticar(request):
         'created_at': repo_mod.now_iso(),
     }
     repo.put('diagnostico', item)
+    # Push #3 (resultado listo): le pedimos a MS1 que avise al paciente,
+    # reenviando el JWT del médico. Resiliente: si MS1 está caído, el
+    # diagnóstico ya quedó guardado y solo se loggea un warning.
+    notificar_resultado(
+        request.headers.get('Authorization'),
+        paciente_id,
+        tipo_estudio,
+    )
     return Response(item, status=201)
 
 

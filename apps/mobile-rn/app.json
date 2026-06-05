@@ -65,8 +65,11 @@
     "extra": {
       "supabaseUrl": "<YOUR_SUPABASE_URL>",
       "supabaseAnonKey": "<YOUR_SUPABASE_PUBLISHABLE_KEY>",
-      "graphqlUrl": "http://192.168.64.97:8080/graphql",
-      "blockchainUrl": "http://192.168.64.97:3001"
+      "graphqlUrl": "http://192.168.64.97:4000/graphql",
+      "blockchainUrl": "http://192.168.64.97:3001",
+      "eas": {
+        "projectId": "<TU_EAS_PROJECT_ID>"
+      }
     }
   }
 }

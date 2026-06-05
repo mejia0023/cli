@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase, rolDelJwt, type RolUsuario } from '../config/supabase';
+import { registrarPushToken } from '../lib/registerPush';
 
 export interface PerfilUsuario {
   id: string;
@@ -28,8 +29,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(data.session);
       setLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
+      // Registro silencioso del ExpoPushToken tras iniciar sesion (o al abrir la
+      // app ya logueado). Fire-and-forget: no bloquea la UI ni interrumpe el
+      // login; los errores se ignoran (Recursos Nativos permite reintentar).
+      if (s && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
+        void registrarPushToken().catch(() => {});
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, []);

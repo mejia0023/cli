@@ -9,6 +9,14 @@ como `UUID`, no objetos `Paciente`/`Usuario`). Los subgrafos son **disjuntos**, 
 que unir con `@key` (que es para lo que sirve Federation). **Stitching** los compone tal como están,
 **sin tocar MS1 ni MS3**.
 
+## ⚠️ Tras cambiar el SCHEMA de MS1: reiniciar el gateway
+El gateway introspecciona MS1 **una sola vez al arrancar** (no hay re-introspección periódica).
+Si agregas/cambias campos o mutations en MS1 (typeDefs/resolvers) — p.ej. `registrarPushToken`,
+`enviarRecordatorios`, `notificarResultado` — debes **(1) levantar/redeployar MS1 primero y
+(2) reiniciar el gateway** para que los exponga en `:4000`. Si no, las llamadas fallarán con
+`Cannot query field ...` aunque MS1 ya tenga el campo. (Las queries de MS3 no se ven afectadas:
+su SDL se lee de archivo, no por introspección.)
+
 ## Cómo funciona
 - **MS1**: se introspecciona en vivo (graphql-yoga permite introspección sin token).
 - **MS3**: su `/graphql` está protegido (no se puede introspeccionar sin token), así que el gateway

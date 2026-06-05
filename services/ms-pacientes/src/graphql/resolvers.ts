@@ -1,8 +1,78 @@
 import { GraphQLScalarType, Kind, GraphQLError } from 'graphql';
 import type { PrismaClient } from '@prisma/client';
 import type { Actor, Rol } from '@/lib/auth';
+import { sendExpoPush, EXPO_TOKEN_RE } from '@/lib/push';
 
 type Ctx = { actor: Actor | null; prisma: PrismaClient };
+
+// America/La_Paz es UTC-4 fijo (Bolivia no aplica horario de verano).
+const LA_PAZ_OFFSET_MS = 4 * 60 * 60 * 1000;
+
+/** Fecha-hora legible en zona La Paz, ej: "vie, 6 jun, 10:00". */
+function fechaLegibleLaPaz(d: Date): string {
+  try {
+    return new Intl.DateTimeFormat('es-BO', {
+      timeZone: 'America/La_Paz',
+      weekday: 'short', day: 'numeric', month: 'short',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).format(d).replace(/\./g, '');
+  } catch {
+    return d.toISOString();
+  }
+}
+
+/** Solo la hora "HH:mm" en zona La Paz. */
+function horaLaPaz(d: Date): string {
+  try {
+    return new Intl.DateTimeFormat('es-BO', {
+      timeZone: 'America/La_Paz', hour: '2-digit', minute: '2-digit', hour12: false,
+    }).format(d);
+  } catch {
+    return d.toISOString();
+  }
+}
+
+/**
+ * Rango [inicio, fin) que cubre TODO el día de "mañana" en hora de La Paz,
+ * expresado en instantes UTC reales (para comparar contra cita.fechaHora, que
+ * Prisma guarda en UTC). No usa la TZ del servidor.
+ */
+function rangoMananaLaPaz(now: Date): { inicio: Date; fin: Date } {
+  // "Reloj de pared" de La Paz = ahora - 4h; de ahí extraemos su fecha.
+  const laPazNow = new Date(now.getTime() - LA_PAZ_OFFSET_MS);
+  const y = laPazNow.getUTCFullYear();
+  const m = laPazNow.getUTCMonth();
+  const d = laPazNow.getUTCDate();
+  // Mañana 00:00 La Paz -> instante UTC = (medianoche local) + 4h.
+  const inicio = new Date(Date.UTC(y, m, d + 1, 0, 0, 0, 0) + LA_PAZ_OFFSET_MS);
+  const fin = new Date(Date.UTC(y, m, d + 2, 0, 0, 0, 0) + LA_PAZ_OFFSET_MS);
+  return { inicio, fin };
+}
+
+/**
+ * Push #1 — Cita confirmada. Fire-and-forget: NUNCA bloquea ni rompe crearCita.
+ * Busca el usuario dueño del paciente (vía supabaseUid) y le envía el aviso.
+ */
+async function notificarCitaConfirmada(
+  ctx: Ctx,
+  cita: { id: string; pacienteId: string; fechaHora: Date; especialidad: string | null },
+): Promise<void> {
+  const pac = await ctx.prisma.paciente.findUnique({
+    where: { id: cita.pacienteId },
+    select: { supabaseUid: true },
+  });
+  if (!pac?.supabaseUid) return;
+  const u = await ctx.prisma.usuario.findUnique({
+    where: { supabaseUid: pac.supabaseUid },
+    select: { expoPushToken: true },
+  });
+  await sendExpoPush(
+    u?.expoPushToken,
+    'Cita confirmada 🏥',
+    `✅ Tu cita quedó agendada: ${fechaLegibleLaPaz(cita.fechaHora)} — ${cita.especialidad ?? 'general'}`,
+    { citaId: cita.id, tipo: 'cita_confirmada' },
+  );
+}
 
 function requireAuth(ctx: Ctx): Actor {
   if (!ctx.actor) throw new GraphQLError('No autenticado', { extensions: { code: 'UNAUTHENTICATED' } });
@@ -166,7 +236,7 @@ export const resolvers = {
       }
       // Asignacion automatica: si nadie indico medico, se elige el menos cargado.
       const medicoUid = i.medicoUid || (await medicoMenosCargado(ctx));
-      return ctx.prisma.cita.create({
+      const cita = await ctx.prisma.cita.create({
         data: {
           pacienteId: i.pacienteId,
           medicoUid,
@@ -176,6 +246,12 @@ export const resolvers = {
           motivo: i.motivo ?? null,
         },
       });
+      // Push #1 (cualquier origen: bots n8n, Angular, app). Fire-and-forget:
+      // si Expo o la BD fallan, la cita ya quedó creada y solo se loggea.
+      void notificarCitaConfirmada(ctx, cita).catch((e) =>
+        console.warn('[push] notificarCitaConfirmada falló:', e instanceof Error ? e.message : e),
+      );
+      return cita;
     },
 
     async cancelarCita(_p: unknown, args: { id: string }, ctx: Ctx) {
@@ -318,6 +394,105 @@ export const resolvers = {
         data: { supabaseUid: uid, nombre, email, rolId: rolRow.id, activo: true },
       });
     },
+
+    // ---------- Notificaciones push (Expo) ----------
+
+    // Registra el ExpoPushToken del dispositivo del actor (cualquier rol
+    // autenticado). Hace upsert por supabaseUid replicando el lazy-provisioning
+    // de me(), por si la fila de usuario aún no existe.
+    async registrarPushToken(_p: unknown, args: { token: string }, ctx: Ctx) {
+      const a = requireAuth(ctx);
+      const token = args.token?.trim();
+      if (!token || !EXPO_TOKEN_RE.test(token)) {
+        throw new GraphQLError(
+          'Token de push inválido (se espera ExponentPushToken[...] o ExpoPushToken[...])',
+          { extensions: { code: 'BAD_USER_INPUT' } },
+        );
+      }
+      const rol = await ctx.prisma.rol.findUnique({ where: { nombre: a.rol } });
+      await ctx.prisma.usuario.upsert({
+        where: { supabaseUid: a.uid },
+        update: { expoPushToken: token },
+        create: {
+          supabaseUid: a.uid,
+          nombre: a.nombre ?? a.email ?? a.uid,
+          email: a.email ?? `${a.uid}@sin-email.local`,
+          rolId: rol?.id ?? 4,
+          expoPushToken: token,
+        },
+      });
+      return true;
+    },
+
+    // Push #2 — Recordatorio 24h. Solo ADMINISTRADOR (lo dispara el cron n8n).
+    async enviarRecordatorios(_p: unknown, _a: unknown, ctx: Ctx) {
+      requireRole(ctx, 'ADMINISTRADOR');
+      const { inicio, fin } = rangoMananaLaPaz(new Date());
+      const citas = await ctx.prisma.cita.findMany({
+        where: { estado: 'AGENDADA', fechaHora: { gte: inicio, lt: fin } },
+        include: { paciente: { select: { supabaseUid: true } } },
+      });
+      let enviados = 0;
+      for (const cita of citas) {
+        // Cada cita en su propio try/catch: un fallo transitorio de BD en una
+        // no debe abortar el lote y dejar al resto sin recordatorio.
+        try {
+          const uid = cita.paciente?.supabaseUid;
+          if (!uid) continue;
+          const u = await ctx.prisma.usuario.findUnique({
+            where: { supabaseUid: uid },
+            select: { expoPushToken: true },
+          });
+          if (!u?.expoPushToken) continue;
+          let medicoNombre = 'tu médico';
+          if (cita.medicoUid) {
+            const med = await ctx.prisma.usuario.findUnique({
+              where: { supabaseUid: cita.medicoUid },
+              select: { nombre: true },
+            });
+            if (med?.nombre) medicoNombre = med.nombre;
+          }
+          await sendExpoPush(
+            u.expoPushToken,
+            'Recordatorio de cita 🔔',
+            `Recuerda: mañana ${horaLaPaz(cita.fechaHora)} tienes cita con ${medicoNombre}`,
+            { citaId: cita.id, tipo: 'recordatorio' },
+          );
+          enviados++;
+        } catch (e) {
+          console.warn('[push] recordatorio de cita', cita.id, 'falló:', e instanceof Error ? e.message : e);
+        }
+      }
+      return enviados;
+    },
+
+    // Push #3 — Resultado listo. Lo invoca MS2 (Django) tras guardar un
+    // diagnóstico, reenviando el JWT del médico. Roles MEDICO o ADMINISTRADOR.
+    async notificarResultado(
+      _p: unknown,
+      args: { pacienteId: string; tipoEstudio?: string | null },
+      ctx: Ctx,
+    ) {
+      requireRole(ctx, 'MEDICO', 'ADMINISTRADOR');
+      const pac = await ctx.prisma.paciente.findUnique({
+        where: { id: args.pacienteId },
+        select: { supabaseUid: true },
+      });
+      if (!pac?.supabaseUid) return false;
+      const u = await ctx.prisma.usuario.findUnique({
+        where: { supabaseUid: pac.supabaseUid },
+        select: { expoPushToken: true },
+      });
+      if (!u?.expoPushToken) return false;
+      const tipo = args.tipoEstudio?.trim() || 'estudio';
+      await sendExpoPush(
+        u.expoPushToken,
+        'Resultado disponible 📋',
+        `Tu resultado de ${tipo} ya está disponible`,
+        { pacienteId: args.pacienteId, tipo: 'resultado' },
+      );
+      return true;
+    },
   },
 
   Usuario: {
@@ -333,6 +508,16 @@ export const resolvers = {
     },
     historia(parent: { id: string }, _a: unknown, ctx: Ctx) {
       return ctx.prisma.historiaClinica.findUnique({ where: { pacienteId: parent.id } });
+    },
+    // Token de push del paciente, vía el usuario vinculado por supabaseUid.
+    // null si la ficha no está vinculada a una cuenta o no registró la app.
+    async pushToken(parent: { supabaseUid: string | null }, _a: unknown, ctx: Ctx) {
+      if (!parent.supabaseUid) return null;
+      const u = await ctx.prisma.usuario.findUnique({
+        where: { supabaseUid: parent.supabaseUid },
+        select: { expoPushToken: true },
+      });
+      return u?.expoPushToken ?? null;
     },
   },
 

@@ -2,6 +2,13 @@ import { gql } from '@apollo/client';
 
 export const HEALTH = gql`query { health }`;
 
+// Registra el ExpoPushToken del dispositivo en MS1 (ms-pacientes).
+export const REGISTRAR_PUSH_TOKEN = gql`
+  mutation RegistrarPushToken($token: String!) {
+    registrarPushToken(token: $token)
+  }
+`;
+
 export const MIS_RECETAS_PACIENTE = gql`
   query MisRecetasPaciente {
     misRecetasPaciente {

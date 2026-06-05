@@ -31,6 +31,7 @@ export const typeDefs = /* GraphQL */ `
     fechaNacimiento: DateTime
     citas: [Cita!]!
     historia: HistoriaClinica
+    pushToken: String
   }
 
   type Cita {
@@ -115,5 +116,14 @@ export const typeDefs = /* GraphQL */ `
     desactivarUsuario(id: ID!): Usuario!
     activarUsuario(id: ID!): Usuario!
     crearUsuario(nombre: String!, email: String!, password: String!, rol: RolNombre!): Usuario!
+
+    # --- Notificaciones push (Expo) ---
+    # Registra el ExpoPushToken del dispositivo del usuario autenticado.
+    registrarPushToken(token: String!): Boolean!
+    # Recordatorio 24h: envía push a cada paciente con cita AGENDADA mañana
+    # (rango calculado en America/La_Paz). Devuelve cuántos push se enviaron.
+    enviarRecordatorios: Int!
+    # Avisa al paciente que su resultado de estudio ya está disponible.
+    notificarResultado(pacienteId: ID!, tipoEstudio: String): Boolean!
   }
 `;
