@@ -56,8 +56,8 @@ const EMAILS = {
   admin: 'admin@clinica.com',
   medico: 'medico@clinica.com',
   farma: 'farma@clinica.com',
-  carlos: 'jamessuperman74@gmail.com',
-  paco: 'fracasosamesite@gmail.com',
+  carlos: 'carlos.rodriguez@example.com',
+  paco: 'paco.pantera@example.com',
 };
 
 const roles = [
