@@ -52,13 +52,22 @@ async function fetchSupabaseUids(env) {
 }
 
 // Emails canonicos de los 5 usuarios reales (fuente de verdad: Supabase Auth).
-const EMAILS = {
-  admin: 'admin@clinica.com',
-  medico: 'medico@clinica.com',
-  farma: 'farma@clinica.com',
-  carlos: 'carlos.rodriguez@example.com',
-  paco: 'paco.pantera@example.com',
-};
+// Los de los PACIENTES son configurables por entorno, para que los correos
+// reales vivan SOLO en tu services/ms-pacientes/.env (gitignoreado) y nunca
+// en el repo:
+//   SEED_CARLOS_EMAIL=correo.real.de.carlos@...
+//   SEED_PACO_EMAIL=correo.real.de.paco@...
+// Sin esas variables se usan los placeholders @example.com (y entonces debes
+// renombrar a los 2 usuarios en Supabase con esos mismos correos).
+function resolverEmails(env) {
+  return {
+    admin: 'admin@clinica.com',
+    medico: 'medico@clinica.com',
+    farma: 'farma@clinica.com',
+    carlos: (env.SEED_CARLOS_EMAIL || 'carlos.rodriguez@example.com').trim().toLowerCase(),
+    paco: (env.SEED_PACO_EMAIL || 'paco.pantera@example.com').trim().toLowerCase(),
+  };
+}
 
 const roles = [
   { id: 1, nombre: 'ADMINISTRADOR', descripcion: 'Acceso total al sistema, gestion de usuarios y BI' },
@@ -87,15 +96,23 @@ const ID = {
 
 async function main() {
   const env = loadEnv();
+  const EMAILS = resolverEmails(env);
   const uids = await fetchSupabaseUids(env);
   const uid = (email) => uids.get(email);
 
   // Verificacion DURA: los 5 emails deben existir en Supabase, o abortamos.
   const faltan = Object.values(EMAILS).filter((e) => !uid(e));
   if (faltan.length) {
+    const disponibles = [...uids.keys()].sort().join(', ') || '(ninguno)';
     throw new Error(
       'Supabase no devolvio uid para: ' + faltan.join(', ') +
-      ' (abortando — prohibido degradar a placeholders seed-*)',
+      '\n  Correos que SI existen en Supabase Auth: ' + disponibles +
+      '\n  Soluciones (elige UNA):' +
+      '\n    a) en services/ms-pacientes/.env agrega:' +
+      '\n         SEED_CARLOS_EMAIL=<email real de Carlos tal como esta en Supabase>' +
+      '\n         SEED_PACO_EMAIL=<email real de Paco tal como esta en Supabase>' +
+      '\n    b) o renombra esos 2 usuarios en Supabase (Authentication -> Users) a los correos buscados.' +
+      '\n  (abortando — prohibido degradar a placeholders seed-*)',
     );
   }
 
