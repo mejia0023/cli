@@ -116,6 +116,13 @@ interface CartItem {
           </select>
         </div>
 
+        <div class="field" style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="caja-pendiente" [(ngModel)]="dejarPendiente" name="pendiente" />
+          <label for="caja-pendiente" style="margin:0; font-weight:400;">
+            Dejar PENDIENTE — el paciente la paga en línea con tarjeta (Stripe)
+          </label>
+        </div>
+
         <button (click)="facturar()" [disabled]="carrito.length === 0 || facturando" class="btn-primary">
           {{ facturando ? 'Facturando...' : 'Facturar' }}
         </button>
@@ -183,6 +190,7 @@ export class CajaComponent implements OnInit {
   q = '';
   pacienteId: string | null = null;
   metodoPago = 'EFECTIVO';
+  dejarPendiente = false;
   facturando = false;
   ultimaFactura: any = null;
 
@@ -245,6 +253,7 @@ export class CajaComponent implements OnInit {
       pacienteId: this.pacienteId,
       metodoPago: this.metodoPago,
       descuento: 0,
+      pendiente: this.dejarPendiente,
       items: this.carrito.map(it => ({
         medicamentoId: it.medicamentoId,
         cantidad: it.cantidad,

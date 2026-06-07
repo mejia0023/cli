@@ -14,6 +14,7 @@ public record FacturaInput(
         UUID pacienteId,
         @NotNull MetodoPago metodoPago,
         @PositiveOrZero BigDecimal descuento,
+        Boolean pendiente,  // true => nace PENDIENTE para pagarse online (Stripe); null/false => PAGADA (caja)
         @NotEmpty @Valid List<ItemInput> items
 ) {
     public record ItemInput(

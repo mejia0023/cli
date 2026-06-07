@@ -74,6 +74,13 @@
             <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
 
+        <!-- Stripe: pagos online (Checkout Sessions + verificacion de webhook) -->
+        <dependency>
+            <groupId>com.stripe</groupId>
+            <artifactId>stripe-java</artifactId>
+            <version>24.3.0</version>
+        </dependency>
+
         <!-- Validacion + actuator -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

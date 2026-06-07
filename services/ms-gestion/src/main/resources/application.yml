@@ -75,3 +75,12 @@ logging:
     com.clinica.gestion: INFO
     org.springframework.security: INFO
     org.hibernate.SQL: INFO
+
+# Pagos online (Stripe Checkout). La SECRET key vive SOLO aqui (backend);
+# Angular y el movil solo reciben la URL de la pagina de pago.
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY:}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  success-url: ${STRIPE_SUCCESS_URL:http://localhost:4200/mis-facturas?pago=exito}
+  cancel-url: ${STRIPE_CANCEL_URL:http://localhost:4200/mis-facturas?pago=cancelado}
+  currency: ${STRIPE_CURRENCY:usd}

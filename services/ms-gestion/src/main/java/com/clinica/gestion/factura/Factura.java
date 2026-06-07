@@ -59,6 +59,13 @@ public class Factura {
     @Builder.Default
     private EstadoFactura estado = EstadoFactura.PAGADA;
 
+    // Pago online (Stripe Checkout): trazabilidad de la sesion y momento del pago.
+    @Column(name = "stripe_session_id", length = 255)
+    private String stripeSessionId;
+
+    @Column(name = "pagada_en")
+    private OffsetDateTime pagadaEn;
+
     @OneToMany(mappedBy = "factura", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<DetalleFactura> detalles = new ArrayList<>();

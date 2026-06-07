@@ -45,6 +45,8 @@ public class SecurityConfig {
                     .authorizeHttpRequests(auth -> auth
                             .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                             .requestMatchers("/graphiql", "/graphiql/**").permitAll()
+                            // Webhook de Stripe: sin JWT; se autentica con la firma Stripe-Signature
+                            .requestMatchers("/api/pagos/webhook").permitAll()
                             .anyRequest().authenticated())
                     .oauth2ResourceServer(o -> o.jwt(j -> j.jwtAuthenticationConverter(jwtConverter)))
                     .addFilterAfter(usuarioContextFilter(), UsernamePasswordAuthenticationFilter.class);

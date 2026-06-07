@@ -12,6 +12,8 @@ type Factura {
   total: BigDecimal!
   metodoPago: MetodoPago!
   estado: EstadoFactura!
+  stripeSessionId: String
+  pagadaEn: DateTime
   detalles: [DetalleFactura!]!
   createdAt: DateTime
 }
@@ -36,6 +38,7 @@ input FacturaInput {
   pacienteId: UUID
   metodoPago: MetodoPago!
   descuento: BigDecimal
+  pendiente: Boolean
   items: [ItemFacturaInput!]!
 }
 
@@ -48,4 +51,6 @@ extend type Query {
 extend type Mutation {
   crearFactura(input: FacturaInput!): Factura!
   anularFactura(id: UUID!, motivo: String): Factura!
+  "Crea una sesion de Stripe Checkout para una factura PENDIENTE y devuelve la URL de pago"
+  crearCheckoutFactura(facturaId: UUID!): String!
 }

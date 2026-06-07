@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -55,7 +56,7 @@ public class FacturaService {
                 .metodoPago(in.metodoPago())
                 .descuento(in.descuento() == null ? BigDecimal.ZERO : in.descuento())
                 .subtotal(BigDecimal.ZERO).total(BigDecimal.ZERO)
-                .estado(EstadoFactura.PAGADA)
+                .estado(Boolean.TRUE.equals(in.pendiente()) ? EstadoFactura.PENDIENTE : EstadoFactura.PAGADA)
                 .build();
 
         BigDecimal subtotal = BigDecimal.ZERO;
@@ -112,6 +113,31 @@ public class FacturaService {
         f.setEstado(EstadoFactura.ANULADA);
         // No revertimos stock automaticamente — decision de negocio.
         // Si se requiere, agregar movimientos AJUSTE manualmente.
+        return facturaRepository.save(f);
+    }
+
+    /** Vincula la sesion de Stripe Checkout creada para esta factura (trazabilidad). */
+    @Transactional
+    public void vincularStripeSession(UUID id, String sessionId) {
+        Factura f = findById(id);
+        f.setStripeSessionId(sessionId);
+        facturaRepository.save(f);
+    }
+
+    /** Confirmacion de pago online (la llama el webhook de Stripe). Idempotente. */
+    @Transactional
+    public Factura marcarPagada(UUID id, String stripeSessionId) {
+        Factura f = findById(id);
+        if (f.getEstado() == EstadoFactura.ANULADA) {
+            throw new BusinessException("La factura esta anulada; no puede pagarse");
+        }
+        if (f.getEstado() == EstadoFactura.PAGADA) {
+            return f; // idempotente: reintentos/replays del webhook no duplican nada
+        }
+        f.setEstado(EstadoFactura.PAGADA);
+        f.setMetodoPago(MetodoPago.TARJETA);
+        f.setStripeSessionId(stripeSessionId);
+        f.setPagadaEn(OffsetDateTime.now());
         return facturaRepository.save(f);
     }
 

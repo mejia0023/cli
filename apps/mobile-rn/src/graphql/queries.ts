@@ -53,3 +53,9 @@ export const LIST_MEDICAMENTOS = gql`
     }
   }
 `;
+
+export const CREAR_CHECKOUT_FACTURA = gql`
+  mutation CrearCheckoutFactura($facturaId: UUID!) {
+    crearCheckoutFactura(facturaId: $facturaId)
+  }
+`;
