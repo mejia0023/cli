@@ -145,7 +145,7 @@ npm start
 4. Como `medico@clinica.com`: Diagnóstico IA → subir cualquier imagen → **devuelve clase + % y un anomaly score** (con imágenes reales casi siempre "anómalo": el modelo demo entrena con datos sintéticos, es esperado).
 5. Recetas: emitir una → en la terminal del Hardhat node **deben aparecer transacciones** (eth_sendRawTransaction); verificar receta → "Íntegra ✓".
 
-Usuarios demo: admin@clinica.com (ADMINISTRADOR), medico@clinica.com (MEDICO), farma@clinica.com (FARMACEUTICO), jamessuperman74@gmail.com (PACIENTE Carlos), fracasosamesite@gmail.com (PACIENTE Paco).
+Usuarios demo: admin@clinica.com (ADMINISTRADOR), medico@clinica.com (MEDICO), farma@clinica.com (FARMACEUTICO), carlos.rodriguez@example.com (PACIENTE Carlos), paco.pantera@example.com (PACIENTE Paco).
 
 ## 11. App móvil (OPCIONAL — requiere Android físico)
 
