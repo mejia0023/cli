@@ -11,6 +11,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from . import blockchain
+from . import llm as llm_mod
 from . import repo as repo_mod
 from . import storage as storage_mod
 from .ml import models as ml_models
@@ -52,6 +53,50 @@ def pre_triaje(request):
     if not sintomas:
         return Response({'error': 'sintomas requerido'}, status=400)
     return Response(ml_triage.pre_triaje(sintomas))
+
+
+@api_view(['POST'])
+@permission_classes([role_required('PACIENTE', 'ADMINISTRADOR', 'MEDICO')])
+def chat_triaje(request):
+    """Chat de pre-triaje conversacional: Gemini + fallback al clasificador por reglas.
+
+    Body: { "mensaje": str, "historial": [{"rol": "user"|"bot", "texto": str}, ...] }
+    Respuesta: { respuesta, especialidad, urgencia, agendar, metodo }
+    La API key del LLM vive SOLO en el .env de este servicio (nunca en el movil).
+    """
+    mensaje = (request.data.get('mensaje') or '').strip()
+    if not mensaje:
+        return Response({'error': 'mensaje requerido'}, status=400)
+
+    historial = []
+    for item in (request.data.get('historial') or [])[-12:]:
+        if isinstance(item, dict):
+            rol = 'bot' if item.get('rol') == 'bot' else 'user'
+            texto = str(item.get('texto') or '').strip()
+            if texto:
+                historial.append({'rol': rol, 'texto': texto[:1000]})
+
+    texto_paciente = ' '.join(
+        [h['texto'] for h in historial if h['rol'] == 'user'] + [mensaje]
+    )
+    pista = ml_triage.pre_triaje(texto_paciente)
+
+    try:
+        salida = llm_mod.chat_triaje(mensaje, historial, pista)
+    except llm_mod.LlmError as exc:
+        print(f'[chat-triaje] LLM no disponible, fallback a reglas: {exc}')
+        salida = {
+            'respuesta': (
+                f"Por lo que me cuentas, te sugiero una consulta de "
+                f"{pista['especialidad']} (urgencia {pista['urgencia']}). "
+                "Deseas que agendemos una cita?"
+            ),
+            'especialidad': pista['especialidad'],
+            'urgencia': pista['urgencia'],
+            'agendar': True,
+            'metodo': 'reglas-nlp (fallback sin LLM)',
+        }
+    return Response(salida)
 
 
 @api_view(['POST'])

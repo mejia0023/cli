@@ -10,6 +10,7 @@ import { MisRecetasScreen } from '../screens/MisRecetasScreen';
 import { MisFacturasScreen } from '../screens/MisFacturasScreen';
 import { VerificadorRecetaScreen } from '../screens/VerificadorRecetaScreen';
 import { RecursosNativosScreen } from '../screens/RecursosNativosScreen';
+import { ChatTriajeScreen } from '../screens/ChatTriajeScreen';
 import type { RolUsuario } from '../config/supabase';
 
 const Stack = createNativeStackNavigator();
@@ -26,6 +27,7 @@ const MENU: MenuItem[] = [
   { name: 'Home', label: 'Inicio', component: HomeScreen, roles: ['ADMINISTRADOR', 'MEDICO', 'FARMACEUTICO', 'PACIENTE'] },
   { name: 'MisRecetas', label: 'Mis recetas', component: MisRecetasScreen, roles: ['MEDICO', 'PACIENTE'] },
   { name: 'MisFacturas', label: 'Mis facturas', component: MisFacturasScreen, roles: ['PACIENTE'] },
+  { name: 'ChatTriaje', label: 'Asistente IA', component: ChatTriajeScreen, roles: ['PACIENTE', 'ADMINISTRADOR', 'MEDICO'] },
   { name: 'Verificador', label: 'Verificar receta', component: VerificadorRecetaScreen, roles: ['ADMINISTRADOR', 'MEDICO', 'FARMACEUTICO'] },
   { name: 'RecursosNativos', label: 'Recursos del telefono', component: RecursosNativosScreen, roles: ['ADMINISTRADOR', 'MEDICO', 'FARMACEUTICO', 'PACIENTE'] },
 ];

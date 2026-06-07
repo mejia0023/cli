@@ -9,6 +9,7 @@ const extra = (Constants.expoConfig?.extra ?? {}) as {
   supabaseAnonKey?: string;
   graphqlUrl?: string;
   blockchainUrl?: string;
+  diagnosticosUrl?: string;
 };
 
 export const env = {
@@ -16,6 +17,7 @@ export const env = {
   supabaseAnonKey: extra.supabaseAnonKey ?? '',
   graphqlUrl: extra.graphqlUrl ?? 'http://localhost:8080/graphql',
   blockchainUrl: extra.blockchainUrl ?? 'http://localhost:3001',
+  diagnosticosUrl: extra.diagnosticosUrl ?? 'http://localhost:8000',
 };
 
 export function assertEnvReady() {

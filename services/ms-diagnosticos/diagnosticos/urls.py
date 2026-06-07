@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path('health', views.health),
     path('pre-triaje', views.pre_triaje),
+    path('chat-triaje', views.chat_triaje),       # POST chat IA (Gemini + fallback reglas)
     path('diagnosticar', views.diagnosticar),
     path('diagnosticos', views.listar_diagnosticos),
     path('documentos', views.listar_documentos),                     # GET ?paciente_id=
