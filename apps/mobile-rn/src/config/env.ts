@@ -12,12 +12,18 @@ const extra = (Constants.expoConfig?.extra ?? {}) as {
   diagnosticosUrl?: string;
 };
 
+// Host desde el que Expo sirvio el bundle: en modo LAN es la IP de tu PC
+// (la del QR), en modo --localhost es 127.0.0.1 (con tuneles adb reverse).
+// Asi gateway, IA y blockchain siguen SOLOS a Metro, sin tocar IPs nunca.
+// Si defines las URLs en app.json -> extra, esas mandan (override manual).
+const devHost = (Constants.expoConfig?.hostUri ?? 'localhost:8081').split(':')[0];
+
 export const env = {
   supabaseUrl: extra.supabaseUrl ?? '',
   supabaseAnonKey: extra.supabaseAnonKey ?? '',
-  graphqlUrl: extra.graphqlUrl ?? 'http://localhost:8080/graphql',
-  blockchainUrl: extra.blockchainUrl ?? 'http://localhost:3001',
-  diagnosticosUrl: extra.diagnosticosUrl ?? 'http://localhost:8000',
+  graphqlUrl: extra.graphqlUrl ?? `http://${devHost}:4000/graphql`,
+  blockchainUrl: extra.blockchainUrl ?? `http://${devHost}:3001`,
+  diagnosticosUrl: extra.diagnosticosUrl ?? `http://${devHost}:8000`,
 };
 
 export function assertEnvReady() {
